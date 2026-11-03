@@ -1,95 +1,110 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import Link from 'next/link';
+import { ArrowRight, Box, Gauge, MousePointer2, Save } from 'lucide-react';
+import { SiteHeader } from '@/components/layout/SiteHeader';
+import { SiteFooter } from '@/components/layout/SiteFooter';
+import { LinkButton } from '@/components/ui/Button';
+import { ProductThumb } from '@/components/products/ProductThumb';
+import { HeroViewer } from '@/components/vehicle/HeroViewer';
+import { VehicleCard } from '@/components/vehicle/VehicleCard';
+import { CATEGORIES, PRODUCTS, formatINR } from '@/data/products';
+import { BRANDS, getVehicle } from '@/data/vehicles';
+import styles from './home.module.css';
 
-export default function Home() {
+const FEATURED = ['mercedes-e-class-w213', 'bmw-5-series-g30', 'porsche-911', 'audi-a6-c8'].map((id) => getVehicle(id)!);
+
+const CATEGORY_PREVIEW: Record<string, string> = {
+  wheels: 'wheel-racing-mesh',
+  spoilers: 'spoiler-gt-wing',
+  bumpers: 'front-aggressive',
+  skirts: 'skirt-racing',
+  lighting: 'head-ice',
+  accessories: 'exhaust-titanium',
+};
+
+export default function HomePage() {
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol>
-          <li>
-            Get started by editing <code>src/app/page.tsx</code>.
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <>
+      <SiteHeader />
+      <main>
+        <section className={styles.hero}>
+          <HeroViewer />
+          <div className={styles.heroShade} />
+          <div className={styles.heroContent}>
+            <span className={styles.eyebrow}><i /> Real-time 3D configurator</span>
+            <h1>Build Your<br />Dream Machine.</h1>
+            <p>Customize every detail. Explore your vehicle in 3D. Make it yours.</p>
+            <div className={styles.heroActions}>
+              <LinkButton href="/vehicles" variant="primary" size="lg" icon={<ArrowRight size={18} />}>Start Customizing</LinkButton>
+              <LinkButton href="#showcase" variant="ghost" size="lg">Explore Vehicles</LinkButton>
+            </div>
+          </div>
+          <div className={styles.heroHint}><MousePointer2 size={14} /> Drag to rotate</div>
+        </section>
 
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-            className={styles.secondary}
-          >
-            Read our docs
-          </a>
-        </div>
+        <section id="brands" className={styles.brands}>
+          {BRANDS.map((b) => (
+            <Link key={b.id} href={`/vehicles?brand=${b.id}`} className={styles.brand}>
+              <span>{b.name}</span>
+              <small>{b.tagline}</small>
+            </Link>
+          ))}
+        </section>
+
+        <section id="showcase" className={styles.section}>
+          <header className={styles.sectionHead}>
+            <div>
+              <span className={styles.kicker}>Showroom</span>
+              <h2>Choose your starting point</h2>
+            </div>
+            <LinkButton href="/vehicles" variant="ghost" size="sm" icon={<ArrowRight size={14} />}>All vehicles</LinkButton>
+          </header>
+          <div className={styles.grid4}>
+            {FEATURED.map((v) => <VehicleCard key={v.id} vehicle={v} />)}
+          </div>
+        </section>
+
+        <section id="categories" className={styles.section}>
+          <header className={styles.sectionHead}>
+            <div>
+              <span className={styles.kicker}>Customisation</span>
+              <h2>Every part, fitted live in 3D</h2>
+            </div>
+          </header>
+          <div className={styles.grid3}>
+            {CATEGORIES.filter((c) => CATEGORY_PREVIEW[c.id]).map((c) => {
+              const items = PRODUCTS.filter((p) => p.category === c.id);
+              const preview = PRODUCTS.find((p) => p.id === CATEGORY_PREVIEW[c.id])!;
+              const min = Math.min(...items.map((p) => p.price));
+              const max = Math.max(...items.map((p) => p.price));
+              return (
+                <Link key={c.id} href="/vehicles" className={styles.category}>
+                  <ProductThumb product={preview} finishColor={c.id === 'wheels' ? '#8a6131' : undefined} size="lg" />
+                  <div className={styles.categoryMeta}>
+                    <h3>{c.name}</h3>
+                    <p>{c.blurb}</p>
+                    <span>{items.length} options · {formatINR(min)} – {formatINR(max)}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className={styles.features}>
+          {[
+            { icon: <Box size={20} />, title: 'Real 3D components', text: 'Wheels, aero and accessories are real meshes fitted to the car — not swapped pictures.' },
+            { icon: <Gauge size={20} />, title: 'Instant pricing', text: 'Every choice updates your build sheet and estimated total in real time.' },
+            { icon: <Save size={20} />, title: 'Save your build', text: 'Keep your configuration on this device and pick up where you left off.' },
+          ].map((f) => (
+            <div key={f.title} className={styles.feature}>
+              <span className={styles.featureIcon}>{f.icon}</span>
+              <h3>{f.title}</h3>
+              <p>{f.text}</p>
+            </div>
+          ))}
+        </section>
       </main>
-      <footer className={styles.footer}>
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      <SiteFooter />
+    </>
   );
 }

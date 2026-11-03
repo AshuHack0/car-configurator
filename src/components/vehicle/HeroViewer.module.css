@@ -1,0 +1,44 @@
+.viewer {
+  position: absolute;
+  inset: 0 0 0 34%;
+  /* Fade the canvas into the page so there is no hard edge beside the headline. */
+  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 22%);
+  mask-image: linear-gradient(90deg, transparent 0%, #000 22%);
+}
+
+@media (max-width: 720px) {
+  .viewer {
+    inset: 56px 0 38% 0;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+
+.loading {
+  position: absolute;
+  right: clamp(16px, 6vw, 80px);
+  bottom: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.bar {
+  width: 180px;
+  height: 2px;
+  background: var(--border-strong);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.3s var(--ease);
+}

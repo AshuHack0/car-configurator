@@ -1,0 +1,71 @@
+.shell {
+  height: 100svh;
+  display: grid;
+  grid-template-columns: 212px minmax(0, 1fr) 384px;
+  grid-template-rows: 64px minmax(0, 1fr) auto;
+  grid-template-areas:
+    'top top top'
+    'nav viewer panel'
+    'sum sum sum';
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.viewer {
+  grid-area: viewer;
+  position: relative;
+  min-height: 0;
+  background: #eceef1;
+}
+
+.panel {
+  grid-area: panel;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  background: var(--bg-raised);
+}
+
+.panelHead {
+  padding: 20px 20px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panelHead h2 {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.panelHead p {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+@media (max-width: 1180px) {
+  .shell {
+    grid-template-columns: 76px minmax(0, 1fr) 340px;
+  }
+}
+
+@media (max-width: 900px) {
+  .shell {
+    height: auto;
+    min-height: 100svh;
+    overflow: visible;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: 56px 56svh auto auto auto;
+    grid-template-areas:
+      'top'
+      'viewer'
+      'nav'
+      'panel'
+      'sum';
+  }
+  .panel {
+    border-left: none;
+    padding-bottom: 96px;
+  }
+}
