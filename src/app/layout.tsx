@@ -6,7 +6,7 @@ const geistSans = localFont({ src: './fonts/GeistVF.woff', variable: '--font-san
 const geistMono = localFont({ src: './fonts/GeistMonoVF.woff', variable: '--font-mono', weight: '100 900' });
 
 export const metadata: Metadata = {
-  title: 'Dream Machine — 3D Vehicle Configurator',
+  title: 'Modifed — 3D Vehicle Configurator',
   description: 'Customise every detail. Explore your vehicle in 3D. Make it yours.',
 };
 

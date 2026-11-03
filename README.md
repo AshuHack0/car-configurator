@@ -1,4 +1,4 @@
-# Dream Machine — 3D Car Configurator (frontend-only demo)
+# Modifed — 3D Car Configurator (frontend-only demo)
 
 A client-presentation demo of a real-time 3D vehicle configurator. Everything runs in the browser:
 Next.js 14 + React Three Fiber + drei, CSS Modules, React state and `localStorage`. No backend, database or external API.
