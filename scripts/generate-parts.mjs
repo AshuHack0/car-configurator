@@ -205,9 +205,11 @@ function crossSection(points, width, bevel = 0.004) {
   const g = new THREE.ExtrudeGeometry(shape, {
     depth: width, bevelEnabled: bevel > 0, bevelThickness: bevel, bevelSize: bevel, bevelSegments: 2, curveSegments: 12,
   });
-  // shape X -> world Z, shape Y -> world Y, extrude Z -> world X
-  g.rotateY(Math.PI / 2);
-  g.translate(-width / 2, 0, 0);
+  // shape X -> world +Z, shape Y -> world Y, extrude Z -> world -X.
+  // (rotateY(+90°) would send shape X to -Z, which mirrored every profile front-to-back:
+  // spoiler lips kicked up at the leading edge and diffuser strakes stuck out behind the car.)
+  g.rotateY(-Math.PI / 2);
+  g.translate(width / 2, 0, 0);
   return g;
 }
 

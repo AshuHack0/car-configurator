@@ -38,7 +38,7 @@ export const VEHICLES: Vehicle[] = [
   },
   {
     id: 'bmw-3-series-g20', brand: 'bmw', model: '3 Series', generation: 'G20', body: 'sedan',
-    basePrice: 5_100_000, power: '255 hp', assetId: 'studio-coupe',
+    basePrice: 5_100_000, power: '255 hp', assetId: 'bmw-m4-g82',
     generations: [
       { code: 'F30', label: 'F30 (2012–2019)', years: range(2012, 2019) },
       { code: 'G20', label: 'G20 (2019–present)', years: range(2019, 2025) },
@@ -46,7 +46,7 @@ export const VEHICLES: Vehicle[] = [
   },
   {
     id: 'bmw-5-series-g30', brand: 'bmw', model: '5 Series', generation: 'G30', body: 'sedan',
-    basePrice: 7_200_000, power: '248 hp', assetId: 'studio-coupe',
+    basePrice: 7_200_000, power: '248 hp', assetId: 'bmw-m4-g82',
     generations: [
       { code: 'F10', label: 'F10 (2010–2017)', years: range(2010, 2017) },
       { code: 'G30', label: 'G30 (2017–2023)', years: range(2017, 2023) },
@@ -55,7 +55,7 @@ export const VEHICLES: Vehicle[] = [
   },
   {
     id: 'bmw-x5-g05', brand: 'bmw', model: 'X5', generation: 'G05', body: 'suv',
-    basePrice: 9_700_000, power: '375 hp', assetId: 'studio-coupe',
+    basePrice: 9_700_000, power: '375 hp', assetId: 'bmw-m4-g82',
     generations: [
       { code: 'F15', label: 'F15 (2013–2018)', years: range(2013, 2018) },
       { code: 'G05', label: 'G05 (2018–present)', years: range(2018, 2025) },
@@ -87,7 +87,7 @@ export const VEHICLES: Vehicle[] = [
   },
   {
     id: 'porsche-911', brand: 'porsche', model: '911', generation: '992', body: 'coupe',
-    basePrice: 18_600_000, power: '379 hp', assetId: 'studio-coupe',
+    basePrice: 18_600_000, power: '379 hp', assetId: 'porsche-911-991',
     generations: [
       { code: '991', label: '991 (2011–2019)', years: range(2011, 2019) },
       { code: '992', label: '992 (2019–present)', years: range(2019, 2025) },
@@ -95,10 +95,76 @@ export const VEHICLES: Vehicle[] = [
   },
   {
     id: 'porsche-cayenne', brand: 'porsche', model: 'Cayenne', generation: '9Y0', body: 'suv',
-    basePrice: 14_200_000, power: '348 hp', assetId: 'studio-coupe',
+    basePrice: 14_200_000, power: '348 hp', assetId: 'porsche-911-991',
     generations: [
       { code: '92A', label: '92A (2010–2017)', years: range(2010, 2017) },
       { code: '9Y0', label: '9Y0 (2017–present)', years: range(2017, 2025) },
+    ],
+  },
+  {
+    id: 'porsche-panamera', brand: 'porsche', model: 'Panamera', generation: '971', body: 'sedan',
+    basePrice: 17_000_000, power: '348 hp', assetId: 'porsche-911-991',
+    generations: [
+      { code: '970', label: '970 (2009–2016)', years: range(2009, 2016) },
+      { code: '971', label: '971 (2016–2023)', years: range(2016, 2023) },
+      { code: '976', label: '976 (2023–present)', years: range(2023, 2025) },
+    ],
+  },
+  {
+    id: 'porsche-macan', brand: 'porsche', model: 'Macan', generation: '95B', body: 'suv',
+    basePrice: 9_600_000, power: '261 hp', assetId: 'porsche-911-991',
+    generations: [
+      { code: '95B', label: '95B (2014–2024)', years: range(2014, 2024) },
+      { code: 'XAB', label: 'Macan Electric (2024–present)', years: range(2024, 2025) },
+    ],
+  },
+  {
+    id: 'porsche-taycan', brand: 'porsche', model: 'Taycan', generation: 'Y1A', body: 'sedan',
+    basePrice: 17_500_000, power: '402 hp', assetId: 'porsche-911-991',
+    generations: [
+      { code: 'Y1A', label: 'Y1A (2019–2024)', years: range(2019, 2024) },
+      { code: 'Y1A-FL', label: 'Y1A facelift (2024–present)', years: range(2024, 2025) },
+    ],
+  },
+  {
+    id: 'porsche-718-cayman', brand: 'porsche', model: '718 Cayman', generation: '982', body: 'coupe',
+    basePrice: 14_800_000, power: '300 hp', assetId: 'porsche-911-991',
+    generations: [
+      { code: '981', label: '981 Cayman (2012–2016)', years: range(2012, 2016) },
+      { code: '982', label: '982 718 Cayman (2016–present)', years: range(2016, 2025) },
+    ],
+  },
+  {
+    id: 'bmw-m4-g82', brand: 'bmw', model: 'M4', generation: 'G82', body: 'coupe',
+    basePrice: 15_000_000, power: '503 hp', assetId: 'bmw-m4-g82',
+    generations: [
+      { code: 'F82', label: 'F82 (2014–2020)', years: range(2014, 2020) },
+      { code: 'G82', label: 'G82 (2021–present)', years: range(2021, 2025) },
+    ],
+  },
+  {
+    id: 'bmw-7-series-g70', brand: 'bmw', model: '7 Series', generation: 'G70', body: 'sedan',
+    basePrice: 18_000_000, power: '375 hp', assetId: 'bmw-m4-g82',
+    generations: [
+      { code: 'G11', label: 'G11/G12 (2015–2022)', years: range(2015, 2022) },
+      { code: 'G70', label: 'G70 (2022–present)', years: range(2022, 2025) },
+    ],
+  },
+  {
+    id: 'bmw-x7-g07', brand: 'bmw', model: 'X7', generation: 'G07', body: 'suv',
+    basePrice: 13_000_000, power: '375 hp', assetId: 'bmw-m4-g82',
+    generations: [
+      { code: 'G07', label: 'G07 (2019–2022)', years: range(2019, 2022) },
+      { code: 'G07-LCI', label: 'G07 LCI (2022–present)', years: range(2022, 2025) },
+    ],
+  },
+  {
+    id: 'bmw-x3-g01', brand: 'bmw', model: 'X3', generation: 'G01', body: 'suv',
+    basePrice: 7_500_000, power: '248 hp', assetId: 'bmw-m4-g82',
+    generations: [
+      { code: 'F25', label: 'F25 (2010–2017)', years: range(2010, 2017) },
+      { code: 'G01', label: 'G01 (2017–2024)', years: range(2017, 2024) },
+      { code: 'G45', label: 'G45 (2024–present)', years: range(2024, 2025) },
     ],
   },
   {
@@ -110,6 +176,9 @@ export const VEHICLES: Vehicle[] = [
     ],
   },
 ];
+
+/** Brands the photo identification flow accepts (pilot: Porsche and BMW). */
+export const IDENTIFY_BRANDS: BrandId[] = ['porsche', 'bmw'];
 
 export function getVehicle(id: string): Vehicle | undefined {
   return VEHICLES.find((v) => v.id === id);

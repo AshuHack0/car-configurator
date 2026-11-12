@@ -1,14 +1,18 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei';
+import { Bloom, EffectComposer, N8AO, ToneMapping } from '@react-three/postprocessing';
+import { ToneMappingMode } from 'postprocessing';
 import type { ResolvedPaint } from '@/hooks/useConfigurator';
 import type { Configuration, Product } from '@/types/product';
 import type { VehicleAssetConfig } from '@/types/vehicle';
 import { CameraController, presetPosition, type CameraPreset } from './CameraController';
 import { ModelErrorBoundary } from './ModelErrorBoundary';
 import { VehicleModel } from './VehicleModel';
+import type { RenderQuality } from './materials';
 
 export type StageLighting = 'studio' | 'warm' | 'cool';
 
@@ -27,11 +31,16 @@ interface Props {
   onError?: (error: Error) => void;
 }
 
-/** Bright showroom stages; `env` is the backdrop the paint reflects (mid-grey keeps body lines readable). */
-const STAGES: Record<StageLighting, { key: string; rim: string; floor: string; intensity: number; bg: string; env: string }> = {
-  studio: { key: '#ffffff', rim: '#dbe7ff', floor: '#e4e7eb', intensity: 1, bg: '#eceef1', env: '#7b828c' },
-  warm: { key: '#fff1e2', rim: '#ffd2a8', floor: '#ebe5df', intensity: 1, bg: '#f1ece6', env: '#857d74' },
-  cool: { key: '#eef4ff', rim: '#9cc3ff', floor: '#e1e7ef', intensity: 1, bg: '#e8edf4', env: '#737e8e' },
+interface Stage { key: string; rim: string; floor: string; bg: string; walls: string }
+
+/**
+ * Bright showroom stages. `walls` is the studio surround the paint reflects:
+ * kept mid-dark so the softbox strips read as crisp highlight lines on the body.
+ */
+const STAGES: Record<StageLighting, Stage> = {
+  studio: { key: '#ffffff', rim: '#e6eeff', floor: '#e6e8eb', bg: '#e9ebee', walls: '#4a4f56' },
+  warm: { key: '#fff1e2', rim: '#ffd9b5', floor: '#ece6df', bg: '#efe9e3', walls: '#524b45' },
+  cool: { key: '#eef4ff', rim: '#b5d2ff', floor: '#e2e7ee', bg: '#e5eaf1', walls: '#454c57' },
 };
 
 function useIsMobile() {
@@ -46,11 +55,47 @@ function useIsMobile() {
   return mobile;
 }
 
+/**
+ * Long softboxes like a photo studio. They give paint the crisp, continuous
+ * highlight lines that make a body read as real sheet metal.
+ */
+function Softboxes({ stage }: { stage: Stage }) {
+  return (
+    <>
+      {/* Overhead softbox: kept narrow so the roof and bonnet show a defined highlight, not a white wash. */}
+      <Lightformer form="rect" intensity={1.6} color={stage.key} position={[0, 7, 0]} rotation-x={Math.PI / 2} scale={[9, 2.2, 1]} />
+      {/* Long horizontal strips: the shoulder-line highlights you see in car photography. */}
+      <Lightformer form="rect" intensity={2.2} color={stage.key} position={[-7, 1.6, 0]} rotation-y={Math.PI / 2} scale={[16, 0.35, 1]} />
+      <Lightformer form="rect" intensity={2.2} color={stage.key} position={[7, 1.6, 0]} rotation-y={-Math.PI / 2} scale={[16, 0.35, 1]} />
+      <Lightformer form="rect" intensity={1.2} color={stage.rim} position={[-7, 3.8, 0]} rotation-y={Math.PI / 2} scale={[16, 0.2, 1]} />
+      <Lightformer form="rect" intensity={1.2} color={stage.rim} position={[7, 3.8, 0]} rotation-y={-Math.PI / 2} scale={[16, 0.2, 1]} />
+      <Lightformer form="rect" intensity={1.2} color={stage.rim} position={[0, 2.2, 9]} rotation-y={Math.PI} scale={[8, 0.8, 1]} />
+      <Lightformer form="rect" intensity={1.2} color={stage.rim} position={[0, 2.2, -9]} scale={[8, 0.8, 1]} />
+    </>
+  );
+}
+
+/**
+ * A fully controlled photo studio rendered once into the environment map: dark
+ * surround, softbox strips, and a light floor that gives the lower body the
+ * horizon reflection real cars show. Built from local geometry, so nothing is downloaded.
+ */
+function StudioEnvironment({ stage, resolution }: { stage: Stage; resolution: number }) {
+  return (
+    <Environment resolution={resolution} frames={1}>
+      <color attach="background" args={[stage.walls]} />
+      <Softboxes stage={stage} />
+      <Lightformer form="rect" intensity={0.55} color={stage.floor} position={[0, -0.5, 0]} rotation-x={-Math.PI / 2} scale={[60, 60, 1]} />
+    </Environment>
+  );
+}
+
 export default function VehicleScene({
   asset, config, paint, supported, preset = 'threeQuarter', presetNonce = 0, lighting = 'studio',
   autoRotate = false, hero = false, retryKey = 0, onError,
 }: Props) {
   const mobile = useIsMobile();
+  const quality: RenderQuality = mobile ? 'low' : 'high';
   const stage = STAGES[lighting];
   const initial = presetPosition('threeQuarter', asset, hero ? 1.3 : 1);
 
@@ -58,39 +103,55 @@ export default function VehicleScene({
     <Canvas
       shadows
       dpr={mobile ? [1, 1.5] : [1, 2]}
-      camera={{ position: initial.position, fov: hero ? 32 : 38, near: 0.1, far: 100 }}
-      gl={{ antialias: true, powerPreference: 'high-performance' }}
+      // ~30 degree lens: wide angles exaggerate perspective and make a car look like a toy.
+      camera={{ position: initial.position, fov: hero ? 26 : 30, near: 0.1, far: 120 }}
+      // Desktop anti-aliasing comes from the composer's multisampling.
+      gl={{ antialias: mobile, powerPreference: 'high-performance', stencil: false }}
+      onCreated={({ gl }) => {
+        // Khronos PBR Neutral keeps paint colours true; ACES shifts reds towards orange and crushes blacks.
+        gl.toneMapping = THREE.NeutralToneMapping;
+        gl.toneMappingExposure = 1;
+      }}
       style={{ touchAction: 'none' }}
     >
       <color attach="background" args={[stage.bg]} />
-      <fog attach="fog" args={[stage.bg, 10, 24]} />
+      <fog attach="fog" args={[stage.bg, 16, 42]} />
 
-      <ambientLight intensity={0.5 * stage.intensity} />
-      <spotLight position={[4, 8, 3]} angle={0.45} penumbra={1} intensity={60 * stage.intensity} color={stage.key} castShadow={!mobile} shadow-mapSize={[1024, 1024]} />
+      {/* One soft key light for self-shadowing; all other light comes from the environment. */}
+      <spotLight
+        position={[3, 10, 2]} angle={0.5} penumbra={1} intensity={45} color={stage.key}
+        castShadow={!mobile} shadow-mapSize={[2048, 2048]} shadow-bias={-0.0001} shadow-normalBias={0.02}
+      />
+      {/*
+        Soft sky/floor fill, like a studio's overhead diffusion. It lifts the diffuse base coat of
+        light paints (whites read grey against the darker reflection surround otherwise) without
+        adding reflections, so dark paints and highlight lines are barely affected.
+      */}
+      <hemisphereLight args={[stage.key, stage.floor, 1.1]} />
 
-      {/* Studio reflections built from local light panels — no HDRI download. */}
-      <Environment resolution={mobile ? 128 : 256} frames={1} key={lighting}>
-        <color attach="background" args={[stage.env]} />
-        <Lightformer form="rect" intensity={2.2 * stage.intensity} color={stage.key} position={[0, 6, 0]} rotation-x={Math.PI / 2} scale={[12, 3, 1]} />
-        <Lightformer form="rect" intensity={1.6 * stage.intensity} color={stage.key} position={[-6, 2, 0]} rotation-y={Math.PI / 2} scale={[10, 1.2, 1]} />
-        <Lightformer form="rect" intensity={1.6 * stage.intensity} color={stage.key} position={[6, 2, 0]} rotation-y={-Math.PI / 2} scale={[10, 1.2, 1]} />
-        <Lightformer form="rect" intensity={1.2 * stage.intensity} color={stage.rim} position={[0, 1.5, 7]} rotation-y={Math.PI} scale={[8, 1, 1]} />
-        <Lightformer form="rect" intensity={1.2 * stage.intensity} color={stage.rim} position={[0, 1.5, -7]} scale={[8, 1, 1]} />
-        <Lightformer form="ring" intensity={2 * stage.intensity} color={stage.rim} position={[4, 4, -6]} scale={2} />
-      </Environment>
+      <StudioEnvironment key={lighting} stage={stage} resolution={mobile ? 256 : 512} />
 
       <ModelErrorBoundary resetKey={`${asset.modelUrl}:${retryKey}`} onError={onError}>
         <Suspense fallback={null}>
-          <VehicleModel asset={asset} config={config} paint={paint} supported={supported} />
+          <VehicleModel asset={asset} config={config} paint={paint} supported={supported} quality={quality} />
         </Suspense>
       </ModelErrorBoundary>
 
-      <ContactShadows position={[0, 0.002, 0]} opacity={0.55} scale={12} blur={2.2} far={2.5} color="#1e2530" resolution={mobile ? 256 : 1024} />
+      {/*
+        Two-layer studio shadow: a tight, darker layer where the body meets the floor and a
+        wide, faint layer for the soft ambient spread under a car lit by overhead softboxes.
+      */}
+      <ContactShadows position={[0, 0.002, 0]} opacity={0.7} scale={10} blur={1.6} far={0.6} color="#10141a" resolution={mobile ? 256 : 512} />
+      <ContactShadows position={[0, 0.001, 0]} opacity={0.45} scale={14} blur={3.2} far={3} color="#1a1f27" resolution={mobile ? 256 : 512} />
 
-      {/* Matte showroom floor; fog fades its edge into the backdrop so there is no horizon line. */}
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]} receiveShadow>
-        <circleGeometry args={[40, 64]} />
-        <meshStandardMaterial color={stage.floor} roughness={0.95} metalness={0} envMapIntensity={0.3} />
+      {/*
+        Seamless cyclorama floor: unlit and the same tone as the backdrop, so there is
+        no horizon line. Grounding comes from the soft shadow and ambient occlusion.
+        toneMapped=false keeps it matched to the (untonemapped) background on phones.
+      */}
+      <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]}>
+        <circleGeometry args={[50, 64]} />
+        <meshBasicMaterial color={stage.bg} toneMapped={false} fog={false} />
       </mesh>
 
       <OrbitControls
@@ -100,13 +161,23 @@ export default function VehicleScene({
         dampingFactor={0.08}
         enablePan={false}
         enableZoom={!hero}
-        minDistance={3.4}
-        maxDistance={16}
+        minDistance={4.5}
+        maxDistance={20}
         maxPolarAngle={Math.PI / 2 - 0.04}
         autoRotate={autoRotate || hero}
-        autoRotateSpeed={hero ? 0.6 : 1.2}
+        autoRotateSpeed={hero ? 0.5 : 1}
       />
       {!hero && <CameraController asset={asset} preset={preset} nonce={presetNonce} />}
+
+      {/* Phones skip post-processing and rely on the renderer's tone mapping. */}
+      {!mobile && (
+        <EffectComposer multisampling={4} enableNormalPass={false}>
+          {/* Ambient occlusion: panel gaps, wheel arches and the car-to-floor contact. */}
+          <N8AO aoRadius={0.5} distanceFalloff={0.8} intensity={2} quality="medium" halfRes />
+          <Bloom mipmapBlur luminanceThreshold={1} luminanceSmoothing={0.2} intensity={0.2} />
+          <ToneMapping mode={ToneMappingMode.NEUTRAL} />
+        </EffectComposer>
+      )}
     </Canvas>
   );
 }

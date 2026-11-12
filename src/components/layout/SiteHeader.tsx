@@ -22,11 +22,12 @@ export function SiteHeader() {
     <header className={styles.header}>
       <Logo />
       <nav className={styles.nav}>
+        <Link href="/identify">Upload your car</Link>
         <Link href="/vehicles">Vehicles</Link>
         <Link href="/#categories">Customise</Link>
         <Link href="/#brands">Brands</Link>
       </nav>
-      <LinkButton href="/vehicles" variant="primary" size="sm">Start Customizing</LinkButton>
+      <LinkButton href="/identify" variant="primary" size="sm">Upload your car</LinkButton>
     </header>
   );
 }

@@ -27,9 +27,20 @@ export function TopBar({ vehicle, brand, asset, generation, year, hasSaved, onRe
           {vehicle.model}
           <span>{generation}{year ? ` · ${year}` : ''}</span>
         </h1>
-        {asset.standIn && (
+        {asset.standIn ? (
           <span className={styles.standIn} title={`3D body: ${asset.credit}. Add a licensed GLB for this exact model in src/data/demoAssets.ts.`}>
             <Info size={12} /> Demo 3D body
+          </span>
+        ) : asset.vehicles && !asset.vehicles.includes(vehicle.id) ? (
+          <span
+            className={styles.standIn}
+            title={`A 3D model of the ${brand.name} ${vehicle.model} is not in the library yet, so the closest ${brand.name} body (${asset.label}) is shown. Paint, wheels and parts still preview on it.`}
+          >
+            <Info size={12} /> 3D body: {asset.shortLabel ?? asset.label}
+          </span>
+        ) : asset.generations && !asset.generations.includes(generation) && (
+          <span className={styles.standIn} title={`The 3D body shown is the ${asset.label}. A ${generation} model is not in the library yet.`}>
+            <Info size={12} /> 3D body: {asset.generations.join('/')}
           </span>
         )}
       </div>

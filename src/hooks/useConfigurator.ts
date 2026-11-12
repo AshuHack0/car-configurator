@@ -28,9 +28,25 @@ export interface LineItem {
   productId?: string;
 }
 
-export function resolvePaint(paint: Configuration['paint']): ResolvedPaint {
+/** The customer's own paint, detected from their photos. It replaces the factory finish at no cost. */
+export interface OwnPaint {
+  name: string;
+  color: string;
+  finish: string;
+}
+
+const finishFor = (id?: string) => CUSTOM_PAINT_FINISHES.find((x) => x.id === id) ?? CUSTOM_PAINT_FINISHES[0];
+
+export function resolvePaint(paint: Configuration['paint'], own?: OwnPaint): ResolvedPaint {
+  if (paint.id === 'factory' && own) {
+    const f = finishFor(own.finish);
+    return {
+      id: 'factory', name: own.name, color: own.color,
+      metalness: f.metalness, roughness: f.roughness, clearcoat: f.clearcoat, clearcoatRoughness: 0.03, price: 0,
+    };
+  }
   if (paint.id === 'custom') {
-    const f = CUSTOM_PAINT_FINISHES.find((x) => x.id === paint.finish) ?? CUSTOM_PAINT_FINISHES[0];
+    const f = finishFor(paint.finish);
     return {
       id: 'custom', name: `Custom ${f.name}`, color: paint.color ?? '#3b82f6',
       metalness: f.metalness, roughness: f.roughness, clearcoat: f.clearcoat, clearcoatRoughness: 0.06, price: CUSTOM_PAINT_PRICE,
@@ -53,7 +69,7 @@ function readSaved(vehicleId: string): SavedConfiguration | null {
   }
 }
 
-export function useConfigurator(vehicleId: string, year?: number, generation?: string) {
+export function useConfigurator(vehicleId: string, year?: number, generation?: string, ownPaint?: OwnPaint) {
   const [config, setConfig] = useState<Configuration>(() => emptyConfig(vehicleId, year, generation));
   const [saved, setSaved] = useState<SavedConfiguration | null>(null);
   /** The most recent preview-only product, so the viewer can show its labelled illustration. */
@@ -98,7 +114,7 @@ export function useConfigurator(vehicleId: string, year?: number, generation?: s
     setPreviewProduct(null);
   }, []);
 
-  const paint = useMemo(() => resolvePaint(config.paint), [config.paint]);
+  const paint = useMemo(() => resolvePaint(config.paint, ownPaint), [config.paint, ownPaint]);
 
   const lineItems = useMemo<LineItem[]>(() => {
     const items: LineItem[] = [];

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Finish, MaterialOverride } from '@/types/product';
 import type { ResolvedPaint } from '@/hooks/useConfigurator';
+import type { SurfacePreset } from '@/types/vehicle';
 
 let carbonTexture: THREE.CanvasTexture | null = null;
 
@@ -35,6 +36,9 @@ function getCarbonTexture() {
   return carbonTexture;
 }
 
+/** "high" uses refractive glass (transmission); "low" (phones) uses cheap alpha-blended glass. */
+export type RenderQuality = 'high' | 'low';
+
 export interface MaterialLibrary {
   paint: THREE.MeshPhysicalMaterial;
   carbon: THREE.MeshPhysicalMaterial;
@@ -42,11 +46,26 @@ export interface MaterialLibrary {
   chrome: THREE.MeshStandardMaterial;
   aluminium: THREE.MeshStandardMaterial;
   titanium: THREE.MeshStandardMaterial;
+  rubber: THREE.MeshPhysicalMaterial;
   dispose: () => void;
 }
 
+/**
+ * Automotive paint: base coat under a mirror-smooth clear coat. Metallic paints
+ * get their look from base metalness/roughness; flake detail is invisible at
+ * configurator viewing distance and only adds shimmer when rendered.
+ */
+function createCarPaint() {
+  return new THREE.MeshPhysicalMaterial({
+    name: 'Runtime_Paint', clearcoat: 1, clearcoatRoughness: 0.03, specularIntensity: 1,
+  });
+}
+
 export function createMaterialLibrary(): MaterialLibrary {
-  const paint = new THREE.MeshPhysicalMaterial({ name: 'Runtime_Paint', clearcoat: 1, clearcoatRoughness: 0.05 });
+  const paint = createCarPaint();
+  const rubber = new THREE.MeshPhysicalMaterial({
+    name: 'Runtime_Rubber', color: '#1c1d1f', metalness: 0, roughness: 0.9, sheen: 0.25, sheenRoughness: 0.8, sheenColor: '#3a3b3e',
+  });
   const carbon = new THREE.MeshPhysicalMaterial({
     name: 'Runtime_Carbon', map: getCarbonTexture(), color: '#ffffff', metalness: 0.35, roughness: 0.42,
     clearcoat: 1, clearcoatRoughness: 0.04,
@@ -57,8 +76,8 @@ export function createMaterialLibrary(): MaterialLibrary {
   const chrome = new THREE.MeshStandardMaterial({ name: 'Runtime_Chrome', color: '#ffffff', metalness: 1, roughness: 0.04 });
   const aluminium = new THREE.MeshStandardMaterial({ name: 'Runtime_Alu', color: '#1b1c1f', metalness: 0.85, roughness: 0.42 });
   const titanium = new THREE.MeshStandardMaterial({ name: 'Runtime_Titanium', color: '#9b8fb3', metalness: 1, roughness: 0.18 });
-  const all = [paint, carbon, glossBlack, chrome, aluminium, titanium];
-  return { paint, carbon, glossBlack, chrome, aluminium, titanium, dispose: () => all.forEach((m) => m.dispose()) };
+  const all = [paint, carbon, glossBlack, chrome, aluminium, titanium, rubber];
+  return { paint, carbon, glossBlack, chrome, aluminium, titanium, rubber, dispose: () => all.forEach((m) => m.dispose()) };
 }
 
 export function applyPaint(material: THREE.MeshPhysicalMaterial, paint: ResolvedPaint) {
@@ -66,6 +85,84 @@ export function applyPaint(material: THREE.MeshPhysicalMaterial, paint: Resolved
   material.roughness = paint.roughness;
   material.clearcoat = paint.clearcoat;
   material.clearcoatRoughness = paint.clearcoatRoughness;
+}
+
+/**
+ * Builds a physically based replacement for one of the vehicle's original
+ * materials. Returns the shared library material for carbon; everything else is
+ * a new material the caller owns.
+ */
+export function createSurfaceMaterial(
+  source: THREE.Material, preset: SurfacePreset, lib: MaterialLibrary, quality: RenderQuality,
+): THREE.Material {
+  if (preset.kind === 'carbon') return lib.carbon;
+  const base = source as THREE.MeshStandardMaterial;
+  const color = new THREE.Color(preset.color ?? base.color ?? '#ffffff');
+  const m = new THREE.MeshPhysicalMaterial({ name: `Surface_${source.name}`, color, side: source.side, metalness: 0 });
+  const r = preset.roughness;
+
+  switch (preset.kind) {
+    case 'glass':
+      if (quality === 'high') {
+        Object.assign(m, { roughness: r ?? 0, transmission: 1, thickness: 0.01, ior: 1.52 });
+      } else {
+        Object.assign(m, { roughness: r ?? 0, transparent: true, opacity: 0.35, depthWrite: false });
+        m.color.set('#20262c');
+      }
+      break;
+    case 'lens':
+      if (quality === 'high') {
+        Object.assign(m, { roughness: r ?? 0.04, transmission: 1, thickness: 0.15, ior: 1.49 });
+      } else {
+        Object.assign(m, { roughness: r ?? 0.04, transparent: true, opacity: 0.6, depthWrite: false });
+      }
+      break;
+    case 'chrome':
+      Object.assign(m, { metalness: 1, roughness: r ?? 0.04 });
+      break;
+    case 'alloy':
+      Object.assign(m, { metalness: 1, roughness: r ?? 0.24, clearcoat: 0.6, clearcoatRoughness: 0.08 });
+      break;
+    case 'metal':
+      Object.assign(m, { metalness: 1, roughness: r ?? 0.42 });
+      break;
+    case 'rubber':
+      Object.assign(m, { roughness: r ?? 0.9, sheen: 0.25, sheenRoughness: 0.8 });
+      m.sheenColor.set('#3a3b3e');
+      break;
+    case 'plastic':
+      Object.assign(m, { roughness: r ?? 0.6 });
+      break;
+    case 'glossPlastic':
+      Object.assign(m, { roughness: r ?? 0.12, clearcoat: 1, clearcoatRoughness: 0.04 });
+      break;
+    case 'leather':
+      Object.assign(m, { roughness: r ?? 0.55, sheen: 0.4, sheenRoughness: 0.6 });
+      m.sheenColor.copy(color).lerp(new THREE.Color('#ffffff'), 0.3);
+      break;
+    case 'fabric':
+      Object.assign(m, { roughness: r ?? 1, sheen: 0.6, sheenRoughness: 0.9 });
+      m.sheenColor.copy(color);
+      break;
+    case 'accent':
+      Object.assign(m, { metalness: 0.1, roughness: r ?? 0.3, clearcoat: 1, clearcoatRoughness: 0.05 });
+      break;
+  }
+  // Keep the model's surface detail (tyre sidewall lettering, panel ambient occlusion).
+  const std = source as THREE.MeshStandardMaterial;
+  if (std.normalMap) {
+    m.normalMap = std.normalMap;
+    m.normalScale.copy(std.normalScale);
+  }
+  if (std.aoMap) {
+    m.aoMap = std.aoMap;
+    m.aoMapIntensity = std.aoMapIntensity;
+  }
+  if (preset.emissive) {
+    m.emissive.set(preset.emissive);
+    m.emissiveIntensity = preset.emissiveIntensity ?? 1;
+  }
+  return m;
 }
 
 export function createFinishMaterial(finish?: Finish) {
@@ -97,6 +194,7 @@ export function bindPartMaterials(root: THREE.Object3D, lib: MaterialLibrary, fi
       case 'Rim_Lip': mesh.material = lib.chrome; break;
       case 'Aluminium_Black': mesh.material = lib.aluminium; break;
       case 'Titanium': mesh.material = lib.titanium; break;
+      case 'Tire': mesh.material = lib.rubber; break;
       case 'Rim_Finish': if (finish) mesh.material = finish; break;
     }
   });
