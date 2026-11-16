@@ -2,7 +2,7 @@
 
 import { Check, Pipette } from 'lucide-react';
 import { CUSTOM_PAINT_FINISHES, CUSTOM_PAINT_PRICE, PAINTS, formatINR } from '@/data/products';
-import type { ResolvedPaint } from '@/hooks/useConfigurator';
+import type { OwnPaint, ResolvedPaint } from '@/hooks/useConfigurator';
 import type { Configuration } from '@/types/product';
 import styles from './PaintPanel.module.css';
 
@@ -10,6 +10,8 @@ interface Props {
   paint: Configuration['paint'];
   resolved: ResolvedPaint;
   onChange: (paint: Configuration['paint']) => void;
+  /** The customer's detected paint; shown in place of the factory finish. */
+  ownPaint?: OwnPaint;
 }
 
 const swatchStyle = (color: string, roughness: number) => ({
@@ -18,7 +20,7 @@ const swatchStyle = (color: string, roughness: number) => ({
     : `radial-gradient(circle at 30% 25%, #ffffff${roughness > 0.4 ? '22' : '66'} 0%, transparent 38%), linear-gradient(160deg, ${color} 30%, #000 140%)`,
 });
 
-export function PaintPanel({ paint, resolved, onChange }: Props) {
+export function PaintPanel({ paint, resolved, onChange, ownPaint }: Props) {
   const isCustom = paint.id === 'custom';
   const customColor = paint.color ?? '#3b82f6';
   const customFinish = paint.finish ?? 'gloss';
@@ -38,13 +40,15 @@ export function PaintPanel({ paint, resolved, onChange }: Props) {
       <div className={styles.grid}>
         {PAINTS.map((p) => {
           const active = paint.id === p.id;
+          const own = p.id === 'factory' && ownPaint;
+          const roughness = own ? (CUSTOM_PAINT_FINISHES.find((f) => f.id === ownPaint.finish)?.roughness ?? p.roughness) : p.roughness;
           return (
             <button key={p.id} className={`${styles.option} ${active ? styles.active : ''}`} onClick={() => onChange({ id: p.id })}>
-              <span className={styles.swatch} style={swatchStyle(p.color, p.roughness)}>
+              <span className={styles.swatch} style={swatchStyle(own ? ownPaint.color : p.color, roughness)}>
                 {active && <Check size={16} />}
               </span>
-              <span className={styles.name}>{p.name}</span>
-              <span className={styles.price}>{p.price ? formatINR(p.price) : 'Included'}</span>
+              <span className={styles.name}>{own ? 'Your paint' : p.name}</span>
+              <span className={styles.price}>{own ? 'Current' : p.price ? formatINR(p.price) : 'Included'}</span>
             </button>
           );
         })}

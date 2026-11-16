@@ -12,15 +12,17 @@ import { PaintCustomizer } from './PaintCustomizer';
 import { SpoilerReplacement } from './SpoilerReplacement';
 import { WheelReplacement } from './WheelReplacement';
 import { useModel } from './loaders';
-import { createMaterialLibrary } from './materials';
-import { buildRig } from './rig';
+import { createMaterialLibrary, createSurfaceMaterial, type RenderQuality } from './materials';
+import { buildRig, sanitize } from './rig';
 
 interface Props {
   asset: VehicleAssetConfig;
   config: Configuration;
   paint: ResolvedPaint;
   supported: (product: Product) => boolean;
+  quality: RenderQuality;
 }
+
 
 /** Slots realised by mounting a GLB part, and the attachment point / mesh group each uses. */
 const ATTACH_SLOTS: { slot: SlotId; replaces?: string }[] = [
@@ -32,7 +34,7 @@ const ATTACH_SLOTS: { slot: SlotId; replaces?: string }[] = [
   { slot: 'exhaust', replaces: 'exhaust' },
 ];
 
-export function VehicleModel({ asset, config, paint, supported }: Props) {
+export function VehicleModel({ asset, config, paint, supported, quality }: Props) {
   const gltf = useModel(asset.modelUrl);
 
   // Each mount gets its own clone with its own materials, so the cached GLB is never mutated.
@@ -40,14 +42,29 @@ export function VehicleModel({ asset, config, paint, supported }: Props) {
     const scene = gltf.scene.clone(true);
     const lib = createMaterialLibrary();
     const owned: THREE.Material[] = [];
+    // Keys may be written as in the source file ("car body", "Plane.001"); three.js sanitises node names.
+    const surfaces: NonNullable<VehicleAssetConfig['surfaces']> = {};
+    for (const [key, preset] of Object.entries(asset.surfaces ?? {})) {
+      surfaces[key] = preset;
+      surfaces[sanitize(key)] ??= preset;
+    }
+    const presetFor = (mesh: THREE.Mesh, material: THREE.Material) =>
+      surfaces[mesh.name] ?? surfaces[mesh.parent?.name ?? ''] ?? surfaces[`mat:${material.name}`] ?? surfaces[material.name];
     scene.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (!mesh.isMesh) return;
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       const source = mesh.material as THREE.Material;
+      const preset = presetFor(mesh, source);
       if (source.name === asset.paintMaterial) {
         mesh.material = lib.paint;
+      } else if (preset) {
+        const m = createSurfaceMaterial(source, preset, lib, quality);
+        if (m !== lib.carbon) owned.push(m);
+        mesh.material = m;
+        // Clear glass should not block the light reaching the cabin.
+        if (preset.kind === 'glass' || preset.kind === 'lens') mesh.castShadow = false;
       } else {
         const m = source.clone();
         owned.push(m);
@@ -55,7 +72,7 @@ export function VehicleModel({ asset, config, paint, supported }: Props) {
       }
     });
     return { scene, rig: buildRig(scene, asset), lib, owned };
-  }, [gltf.scene, asset]);
+  }, [gltf.scene, asset, quality]);
 
   useEffect(() => () => {
     lib.dispose();

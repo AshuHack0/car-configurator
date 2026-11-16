@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { CATEGORIES, PRODUCTS } from '@/data/products';
-import { useConfigurator } from '@/hooks/useConfigurator';
+import { useConfigurator, type OwnPaint } from '@/hooks/useConfigurator';
 import { useVehicle } from '@/hooks/useVehicle';
 import { preloadModels } from '@/three/loaders';
 import type { CameraPreset } from '@/three/CameraController';
@@ -46,11 +46,13 @@ interface Props {
   vehicleId: string;
   generation: string;
   year?: number;
+  /** Paint detected from the customer's photos (the /identify flow). */
+  ownPaint?: OwnPaint;
 }
 
-export function Configurator({ vehicleId, generation, year }: Props) {
+export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
   const v = useVehicle(vehicleId)!;
-  const cfg = useConfigurator(vehicleId, year, generation);
+  const cfg = useConfigurator(vehicleId, year, generation, ownPaint);
   const [category, setCategory] = useState<CategoryId>('wheels');
   const [camera, setCamera] = useState<{ preset: CameraPreset; nonce: number }>({ preset: 'threeQuarter', nonce: 0 });
   const [lighting, setLighting] = useState<StageLighting>('studio');
@@ -144,7 +146,7 @@ export function Configurator({ vehicleId, generation, year }: Props) {
           <p>{activeCategory.blurb}</p>
         </header>
         {category === 'paint' ? (
-          <PaintPanel paint={cfg.config.paint} resolved={cfg.paint} onChange={cfg.setPaint} />
+          <PaintPanel paint={cfg.config.paint} resolved={cfg.paint} onChange={cfg.setPaint} ownPaint={ownPaint} />
         ) : (
           <ProductPanel
             category={activeCategory}

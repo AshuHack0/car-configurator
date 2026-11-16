@@ -26,7 +26,23 @@ export interface VehicleRig {
   groups: Record<string, THREE.Mesh[]>;
 }
 
-const sanitize = (s: string) => s.replace(/\s/g, '_');
+/** Node names as three.js's GLTFLoader stores them ("car body" → "car_body", "Plane.001" → "Plane001"). */
+export const sanitize = (s: string) => THREE.PropertyBinding.sanitizeNodeName(s);
+
+/**
+ * Whether a mesh belongs to any of the given names: its own name, any ancestor's name, or its
+ * material's name written as "mat:<name>" (for models whose parts are only told apart by material).
+ */
+export function matchesAny(mesh: THREE.Mesh, names: Set<string>): boolean {
+  const material = mesh.material as THREE.Material;
+  if (material && names.has(`mat:${material.name}`)) return true;
+  for (let o: THREE.Object3D | null = mesh; o; o = o.parent) {
+    if (names.has(o.name)) return true;
+  }
+  return false;
+}
+
+const nameSet = (names: string[]) => new Set(names.map((n) => (n.startsWith('mat:') ? n : sanitize(n))));
 
 /**
  * Measures a freshly cloned vehicle (in its own model space) and resolves every
@@ -40,7 +56,7 @@ export function buildRig(root: THREE.Object3D, asset: VehicleAssetConfig): Vehic
   // ---- Wheels ---------------------------------------------------------
   const wheels: WheelSlot[] = [];
   for (const nodeName of asset.wheels.nodes) {
-    const node = root.getObjectByName(nodeName);
+    const node = root.getObjectByName(sanitize(nodeName));
     if (!node) continue;
     const originals: THREE.Mesh[] = [];
     node.traverse((o) => {
@@ -63,10 +79,10 @@ export function buildRig(root: THREE.Object3D, asset: VehicleAssetConfig): Vehic
   }
 
   // ---- Raycast targets ------------------------------------------------
-  const wanted = new Set(asset.bodyMeshes.map(sanitize));
+  const wanted = nameSet(asset.bodyMeshes);
   const targets: THREE.Mesh[] = [];
   root.traverse((o) => {
-    if ((o as THREE.Mesh).isMesh && (wanted.has(o.name) || wanted.has(o.parent?.name ?? ''))) targets.push(o as THREE.Mesh);
+    if ((o as THREE.Mesh).isMesh && matchesAny(o as THREE.Mesh, wanted)) targets.push(o as THREE.Mesh);
   });
   const bounds = new THREE.Box3();
   (targets.length ? targets : [root]).forEach((t) => bounds.expandByObject(t));
@@ -122,10 +138,10 @@ export function buildRig(root: THREE.Object3D, asset: VehicleAssetConfig): Vehic
 
   const groups: Record<string, THREE.Mesh[]> = {};
   for (const [group, names] of Object.entries(asset.meshGroups)) {
-    const set = new Set(names.map(sanitize));
+    const set = nameSet(names);
     groups[group] = [];
     root.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh && (set.has(o.name) || set.has(o.parent?.name ?? ''))) groups[group].push(o as THREE.Mesh);
+      if ((o as THREE.Mesh).isMesh && matchesAny(o as THREE.Mesh, set)) groups[group].push(o as THREE.Mesh);
     });
   }
 

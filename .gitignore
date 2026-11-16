@@ -34,3 +34,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Original downloaded 3D models (large); optimised copies live in public/models/vehicles
+/assets-src/

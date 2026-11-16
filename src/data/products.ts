@@ -261,18 +261,18 @@ export const PRODUCTS: Product[] = [
 ];
 
 export const PAINTS: PaintOption[] = [
-  { id: 'factory', name: 'Factory Finish', color: '#c99a0e', metalness: 0.55, roughness: 0.28, clearcoat: 1, price: 0 },
-  { id: 'gloss-black', name: 'Gloss Black', color: '#09090b', metalness: 0.45, roughness: 0.2, clearcoat: 1, clearcoatRoughness: 0.03, price: 85_000 },
-  { id: 'matte-black', name: 'Matte Black', color: '#141416', metalness: 0.25, roughness: 0.72, clearcoat: 0, price: 1_15_000 },
-  { id: 'pearl-white', name: 'Pearl White', color: '#efede7', metalness: 0.25, roughness: 0.25, clearcoat: 1, price: 95_000 },
-  { id: 'metallic-silver', name: 'Metallic Silver', color: '#aeb3ba', metalness: 0.9, roughness: 0.3, clearcoat: 1, price: 90_000 },
-  { id: 'racing-red', name: 'Racing Red', color: '#a3070f', metalness: 0.45, roughness: 0.26, clearcoat: 1, price: 95_000 },
-  { id: 'midnight-blue', name: 'Midnight Blue', color: '#0e1f47', metalness: 0.75, roughness: 0.3, clearcoat: 1, price: 1_05_000 },
+  { id: 'factory', name: 'Factory Finish', color: '#c99a0e', metalness: 0.6, roughness: 0.32, clearcoat: 1, clearcoatRoughness: 0.03, price: 0 },
+  { id: 'gloss-black', name: 'Gloss Black', color: '#060607', metalness: 0, roughness: 0.18, clearcoat: 1, clearcoatRoughness: 0.02, price: 85_000 },
+  { id: 'matte-black', name: 'Matte Black', color: '#121214', metalness: 0.15, roughness: 0.62, clearcoat: 0, price: 1_15_000 },
+  { id: 'pearl-white', name: 'Pearl White', color: '#e9e7e1', metalness: 0.35, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.03, price: 95_000 },
+  { id: 'metallic-silver', name: 'Metallic Silver', color: '#c9cdd2', metalness: 0.85, roughness: 0.36, clearcoat: 1, clearcoatRoughness: 0.03, price: 90_000 },
+  { id: 'racing-red', name: 'Racing Red', color: '#a3070f', metalness: 0, roughness: 0.3, clearcoat: 1, clearcoatRoughness: 0.02, price: 95_000 },
+  { id: 'midnight-blue', name: 'Midnight Blue', color: '#0e1f47', metalness: 0.7, roughness: 0.34, clearcoat: 1, clearcoatRoughness: 0.03, price: 1_05_000 },
 ];
 
 export const CUSTOM_PAINT_FINISHES = [
-  { id: 'gloss', name: 'Gloss', metalness: 0.4, roughness: 0.22, clearcoat: 1 },
-  { id: 'metallic', name: 'Metallic', metalness: 0.85, roughness: 0.3, clearcoat: 1 },
+  { id: 'gloss', name: 'Gloss', metalness: 0, roughness: 0.25, clearcoat: 1 },
+  { id: 'metallic', name: 'Metallic', metalness: 0.8, roughness: 0.34, clearcoat: 1 },
   { id: 'satin', name: 'Satin', metalness: 0.4, roughness: 0.48, clearcoat: 0.3 },
   { id: 'matte', name: 'Matte', metalness: 0.2, roughness: 0.75, clearcoat: 0 },
 ];

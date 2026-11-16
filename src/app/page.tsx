@@ -34,8 +34,8 @@ export default function HomePage() {
             <h1>Build Your<br />Dream Machine.</h1>
             <p>Customize every detail. Explore your vehicle in 3D. Make it yours.</p>
             <div className={styles.heroActions}>
-              <LinkButton href="/vehicles" variant="primary" size="lg" icon={<ArrowRight size={18} />}>Start Customizing</LinkButton>
-              <LinkButton href="#showcase" variant="ghost" size="lg">Explore Vehicles</LinkButton>
+              <LinkButton href="/identify" variant="primary" size="lg" icon={<ArrowRight size={18} />}>Upload your car</LinkButton>
+              <LinkButton href="/vehicles" variant="ghost" size="lg">Choose from catalogue</LinkButton>
             </div>
           </div>
           <div className={styles.heroHint}><MousePointer2 size={14} /> Drag to rotate</div>

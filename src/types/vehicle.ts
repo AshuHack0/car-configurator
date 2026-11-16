@@ -47,6 +47,29 @@ export interface AttachmentPoint {
   mirrorX?: boolean;
 }
 
+export type SurfaceKind =
+  | 'glass'      // window glass: clear, mirror-smooth, slightly tinted
+  | 'lens'       // light lenses (headlight / taillight covers)
+  | 'chrome'
+  | 'alloy'      // painted / machined wheel alloy
+  | 'metal'      // raw or brushed metal (brake discs, exhaust)
+  | 'rubber'
+  | 'plastic'    // textured black trim plastic
+  | 'glossPlastic'
+  | 'leather'
+  | 'fabric'
+  | 'carbon'
+  | 'accent';    // painted accents, calipers, badges
+
+export interface SurfacePreset {
+  kind: SurfaceKind;
+  /** sRGB hex; omitted keeps the model's colour. */
+  color?: string;
+  roughness?: number;
+  emissive?: string;
+  emissiveIntensity?: number;
+}
+
 export type AttachmentId = 'spoiler' | 'frontLower' | 'rearLower' | 'roof' | 'exhaust';
 
 /**
@@ -64,8 +87,22 @@ export interface VehicleAssetConfig {
   modelUrl: string;
   /** Credit line for the 3D asset. */
   credit: string;
+  /** Where the model comes from (shown with the credit, required by CC licences). */
+  sourceUrl?: string;
   /** True when the GLB is a generic stand-in rather than the actual model. */
   standIn: boolean;
+  /**
+   * Generation codes this body actually represents. When the customer's generation is not
+   * listed, the viewer says which body is shown (e.g. a 991 body for a 992 car).
+   */
+  generations?: string[];
+  /**
+   * Catalog vehicle ids this body really is. Other vehicles may borrow it as their brand's closest
+   * body (e.g. every BMW shows the M4 until it has its own model); the viewer then names the body.
+   */
+  vehicles?: string[];
+  /** Short name used in that notice, e.g. "BMW M4 (G82)". */
+  shortLabel?: string;
   /** Direction the car's nose points in model space. */
   forward: '-z' | '+z';
   /** Uniform scale applied to the whole vehicle. */
@@ -82,6 +119,12 @@ export interface VehicleAssetConfig {
   /** Named mesh groups that material products re-skin. */
   meshGroups: Record<string, string[]>;
   support: Record<string, ComponentSupport>;
+  /**
+   * Physically based surface for each part of the GLB. Keys are matched against
+   * the mesh name, then its parent's name, then the material name. Meshes with no
+   * match keep their original material.
+   */
+  surfaces?: Record<string, SurfacePreset>;
   /** Shown on the preview card when a component is not supported by this asset. */
   unsupportedNotes?: Record<string, string>;
   camera: { distance: number; target: Vec3 };
