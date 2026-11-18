@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import * as THREE from 'three';
 import { Canvas } from '@react-three/fiber';
 import { ContactShadows, Environment, Lightformer, OrbitControls } from '@react-three/drei';
@@ -13,6 +13,7 @@ import { CameraController, presetPosition, type CameraPreset } from './CameraCon
 import { LocationBackdrop } from './LocationBackdrop';
 import { ModelErrorBoundary } from './ModelErrorBoundary';
 import { VehicleModel } from './VehicleModel';
+import type { VehicleRig } from './rig';
 import type { RenderQuality } from './materials';
 
 /** `outdoor` is a photographed location; the others are the built-in studio. */
@@ -31,18 +32,20 @@ interface Props {
   hero?: boolean;
   retryKey?: number;
   onError?: (error: Error) => void;
+  /** Dimensions measured from the loaded 3D body (m). */
+  onMeasured?: (dimensions: VehicleRig['dimensions']) => void;
 }
 
-interface Stage { key: string; rim: string; floor: string; bg: string; walls: string }
+interface Stage { key: string; rim: string; floor: string; bg: string; pool: string; walls: string }
 
 /**
  * Bright showroom stages. `walls` is the studio surround the paint reflects:
  * kept mid-dark so the softbox strips read as crisp highlight lines on the body.
  */
 const STAGES: Record<Exclude<StageLighting, 'outdoor'>, Stage> = {
-  studio: { key: '#ffffff', rim: '#e6eeff', floor: '#e6e8eb', bg: '#e9ebee', walls: '#4a4f56' },
-  warm: { key: '#fff1e2', rim: '#ffd9b5', floor: '#ece6df', bg: '#efe9e3', walls: '#524b45' },
-  cool: { key: '#eef4ff', rim: '#b5d2ff', floor: '#e2e7ee', bg: '#e5eaf1', walls: '#454c57' },
+  studio: { key: '#ffffff', rim: '#e6eeff', floor: '#e6e8eb', bg: '#dcdfe3', pool: '#f7f8f9', walls: '#565b63' },
+  warm: { key: '#fff1e2', rim: '#ffd9b5', floor: '#ece6df', bg: '#e2dcd5', pool: '#faf6f1', walls: '#5c554f' },
+  cool: { key: '#eef4ff', rim: '#b5d2ff', floor: '#e2e7ee', bg: '#d6dce5', pool: '#f3f6fa', walls: '#505864' },
 };
 
 /** Turns the location so its buildings sit behind the car in the opening view. */
@@ -95,9 +98,41 @@ function StudioEnvironment({ stage, resolution }: { stage: Stage; resolution: nu
   );
 }
 
+/**
+ * Studio floor: a pool of light under the car that falls away to the backdrop tone,
+ * the way a photo-studio cyclorama looks. The outer edge matches the background
+ * exactly, so there is still no horizon line.
+ */
+function StudioFloor({ stage }: { stage: Stage }) {
+  const texture = useMemo(() => {
+    const size = 512;
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = size;
+    const ctx = canvas.getContext('2d')!;
+    const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    g.addColorStop(0, stage.pool);
+    g.addColorStop(0.1, stage.pool);
+    g.addColorStop(0.42, stage.bg);
+    g.addColorStop(1, stage.bg);
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, size, size);
+    const t = new THREE.CanvasTexture(canvas);
+    t.colorSpace = THREE.SRGBColorSpace;
+    return t;
+  }, [stage.pool, stage.bg]);
+  useEffect(() => () => texture.dispose(), [texture]);
+
+  return (
+    <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]}>
+      <circleGeometry args={[50, 64]} />
+      <meshBasicMaterial map={texture} toneMapped={false} fog={false} />
+    </mesh>
+  );
+}
+
 export default function VehicleScene({
   asset, config, paint, supported, preset = 'threeQuarter', presetNonce = 0, lighting = 'studio',
-  autoRotate = false, hero = false, retryKey = 0, onError,
+  autoRotate = false, hero = false, retryKey = 0, onError, onMeasured,
 }: Props) {
   const mobile = useIsMobile();
   const quality: RenderQuality = mobile ? 'low' : 'high';
@@ -146,7 +181,7 @@ export default function VehicleScene({
 
       <ModelErrorBoundary resetKey={`${asset.modelUrl}:${retryKey}`} onError={onError}>
         <Suspense fallback={null}>
-          <VehicleModel asset={asset} config={config} paint={paint} supported={supported} quality={quality} />
+          <VehicleModel asset={asset} config={config} paint={paint} supported={supported} quality={quality} onMeasured={onMeasured} />
         </Suspense>
       </ModelErrorBoundary>
 
@@ -158,16 +193,11 @@ export default function VehicleScene({
       <ContactShadows position={[0, 0.001, 0]} opacity={outdoor ? 0.7 : 0.45} scale={14} blur={3.2} far={3} color="#1a1f27" resolution={mobile ? 256 : 512} />
 
       {/*
-        Seamless cyclorama floor: unlit and the same tone as the backdrop, so there is
+        Seamless cyclorama floor: unlit, fading to the backdrop tone, so there is
         no horizon line. Grounding comes from the soft shadow and ambient occlusion.
         toneMapped=false keeps it matched to the (untonemapped) background on phones.
       */}
-      {!outdoor && (
-        <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]}>
-          <circleGeometry args={[50, 64]} />
-          <meshBasicMaterial color={stage.bg} toneMapped={false} fog={false} />
-        </mesh>
-      )}
+      {!outdoor && <StudioFloor key={lighting} stage={stage} />}
 
       <OrbitControls
         makeDefault

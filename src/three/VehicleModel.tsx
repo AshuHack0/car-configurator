@@ -13,7 +13,7 @@ import { SpoilerReplacement } from './SpoilerReplacement';
 import { WheelReplacement } from './WheelReplacement';
 import { useModel } from './loaders';
 import { createMaterialLibrary, createSurfaceMaterial, type RenderQuality } from './materials';
-import { buildRig, sanitize } from './rig';
+import { buildRig, sanitize, type VehicleRig } from './rig';
 
 interface Props {
   asset: VehicleAssetConfig;
@@ -21,6 +21,8 @@ interface Props {
   paint: ResolvedPaint;
   supported: (product: Product) => boolean;
   quality: RenderQuality;
+  /** Called with the dimensions measured from this 3D body, once it has loaded. */
+  onMeasured?: (dimensions: VehicleRig['dimensions']) => void;
 }
 
 
@@ -34,7 +36,7 @@ const ATTACH_SLOTS: { slot: SlotId; replaces?: string }[] = [
   { slot: 'exhaust', replaces: 'exhaust' },
 ];
 
-export function VehicleModel({ asset, config, paint, supported, quality }: Props) {
+export function VehicleModel({ asset, config, paint, supported, quality, onMeasured }: Props) {
   const gltf = useModel(asset.modelUrl);
 
   // Each mount gets its own clone with its own materials, so the cached GLB is never mutated.
@@ -86,6 +88,10 @@ export function VehicleModel({ asset, config, paint, supported, quality }: Props
     return { product, finish: productFinish(product, sel.finishId) };
   };
 
+  useEffect(() => {
+    onMeasured?.(rig.dimensions);
+  }, [rig, onMeasured]);
+
   const wheels = pick('wheels');
   const spoiler = pick('spoiler');
   const materialProducts = (Object.keys(config.selections) as SlotId[])
@@ -100,7 +106,11 @@ export function VehicleModel({ asset, config, paint, supported, quality }: Props
       <primitive object={scene} />
       <PaintCustomizer material={lib.paint} paint={paint} />
       <WheelReplacement key={modelOf(wheels) ?? 'stock'} rig={rig} lib={lib} model={modelOf(wheels)} finish={wheels?.finish} />
-      <SpoilerReplacement key={modelOf(spoiler) ?? 'none'} rig={rig} lib={lib} model={modelOf(spoiler)} />
+      <SpoilerReplacement
+        key={modelOf(spoiler) ?? 'none'} rig={rig} lib={lib} model={modelOf(spoiler)}
+        span={spoiler?.product.impl.kind === 'attach' ? spoiler.product.impl.span : undefined}
+        uniform={spoiler?.product.impl.kind === 'attach' ? spoiler.product.impl.uniform : undefined}
+      />
       {ATTACH_SLOTS.map(({ slot, replaces }) => {
         const p = pick(slot);
         if (!p || p.product.impl.kind !== 'attach') return null;
@@ -108,6 +118,7 @@ export function VehicleModel({ asset, config, paint, supported, quality }: Props
           <BumperReplacement
             key={`${slot}:${p.product.id}`}
             rig={rig} lib={lib} model={p.product.impl.model} attachment={p.product.impl.attachment} replaces={replaces}
+            span={p.product.impl.span} uniform={p.product.impl.uniform}
           />
         );
       })}

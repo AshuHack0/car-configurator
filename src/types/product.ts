@@ -42,7 +42,19 @@ export interface MaterialOverride {
 
 export type Implementation =
   | { kind: 'wheels'; model: string }
-  | { kind: 'attach'; model: string; attachment: AttachmentId | 'sideSkirt' }
+  | {
+      kind: 'attach';
+      model: string;
+      attachment: AttachmentId | 'sideSkirt';
+      /**
+       * How wide the part should be, as a fraction of the car's measured width where it mounts
+       * (boot lid for spoilers, wheel-to-wheel for bumpers). The part is scaled to that width on
+       * every car. Omitted: the part keeps its own size.
+       */
+      span?: number;
+      /** Scale the whole part with the width (wings), instead of only stretching it sideways. */
+      uniform?: boolean;
+    }
   | { kind: 'material'; overrides: Record<string, MaterialOverride> }
   | { kind: 'preview'; reason: string };
 

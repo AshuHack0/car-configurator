@@ -13,6 +13,9 @@ interface Props {
   attachment: AttachmentId | 'sideSkirt';
   /** Mesh group replaced by this part, if the asset has one (e.g. a separate bumper mesh). */
   replaces?: string;
+  /** Fraction of the car's width at this mounting point the part should span (product `span`). */
+  span?: number;
+  uniform?: boolean;
 }
 
 /**
@@ -20,12 +23,14 @@ interface Props {
  * with a separate bumper mesh the original is hidden ("replace"); on assets
  * where it is fused into the body the kit is mounted over it ("attach").
  */
-export function BumperReplacement({ rig, lib, model, attachment, replaces }: Props) {
+export function BumperReplacement({ rig, lib, model, attachment, replaces, span, uniform }: Props) {
   const placements = rig.attachments[attachment];
   if (!model || !placements?.length) return null;
+  const station = attachment === 'sideSkirt' ? undefined : rig.stations[attachment];
+  const fit = span && station ? { width: span * station, uniform } : undefined;
   return (
     <Suspense fallback={null}>
-      <PartAttachment url={model} placements={placements} lib={lib} hides={replaces ? rig.groups[replaces] : undefined} />
+      <PartAttachment url={model} placements={placements} lib={lib} hides={replaces ? rig.groups[replaces] : undefined} fit={fit} />
     </Suspense>
   );
 }

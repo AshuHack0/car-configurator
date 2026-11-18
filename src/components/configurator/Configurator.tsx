@@ -2,15 +2,18 @@
 
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Bookmark, Info, RotateCcw, RotateCw, Search } from 'lucide-react';
+import { ArrowLeft, Bookmark, Info, RotateCcw, RotateCw, Ruler, Search, Sparkles } from 'lucide-react';
 import { Logo } from '@/components/layout/SiteHeader';
 import { PRODUCTS, formatINR } from '@/data/products';
 import { useConfigurator, type OwnPaint } from '@/hooks/useConfigurator';
 import { useVehicle } from '@/hooks/useVehicle';
+import { VISUALIZE_HANDOFF_KEY } from '@/lib/visualize/changes';
 import { preloadModels } from '@/three/loaders';
 import type { CameraPreset } from '@/three/CameraController';
 import type { StageLighting } from '@/three/VehicleScene';
+import type { VehicleRig } from '@/three/rig';
 import type { CategoryId, Product, SlotId } from '@/types/product';
 import { OptionSections } from './OptionSections';
 import { SummaryDialog } from './SummaryDialog';
@@ -64,10 +67,12 @@ interface Props {
 export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
   const v = useVehicle(vehicleId)!;
   const cfg = useConfigurator(vehicleId, year, generation, ownPaint);
+  const router = useRouter();
+  const [measured, setMeasured] = useState<VehicleRig['dimensions'] | null>(null);
   const [open, setOpen] = useState<Set<CategoryId>>(() => new Set<CategoryId>(['paint', 'wheels']));
   const [query, setQuery] = useState('');
   const [camera, setCamera] = useState<{ preset: CameraPreset; nonce: number }>({ preset: 'threeQuarter', nonce: 0 });
-  const [lighting, setLighting] = useState<StageLighting>('outdoor');
+  const [lighting, setLighting] = useState<StageLighting>('studio');
   const [autoRotate, setAutoRotate] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
@@ -116,6 +121,16 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
     const lines = cfg.lineItems.map((i) => `- ${i.label}: ${i.name}${i.finish ? ` (${i.finish})` : ''} — ${formatINR(i.price)}`);
     const body = [`Vehicle: ${title} ${generation}${year ? ` (${year})` : ''}`, '', ...lines, '', `Estimated total: ${formatINR(cfg.total)}`].join('\n');
     window.location.href = `mailto:?subject=${encodeURIComponent(`Enquiry: ${title} build`)}&body=${encodeURIComponent(body)}`;
+  };
+
+  /** Hands the current build to the "See it for real" page, which edits a real photograph with AI. */
+  const seeForReal = () => {
+    try {
+      sessionStorage.setItem(VISUALIZE_HANDOFF_KEY, JSON.stringify(cfg.config));
+    } catch {
+      /* storage unavailable: the page opens without a build */
+    }
+    router.push(`/visualize?vehicle=${v.vehicle.id}`);
   };
 
   const { asset } = v;
@@ -193,6 +208,7 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
               autoRotate={autoRotate}
               retryKey={retryKey}
               onError={(e) => setLoadError(e.message)}
+              onMeasured={setMeasured}
             />
             )}
             <ViewerOverlay
@@ -241,6 +257,22 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
             {v.brand.name} · {generation} · {v.vehicle.power}
             {bodyNote && <span className={styles.bodyNote} title={bodyNote.tip}><Info size={12} /> {bodyNote.label}</span>}
           </p>
+
+          {measured && (
+            <p className={styles.fitment} title="Measured from the 3D body. Spoilers, bumpers, skirts and wheels are scaled to these dimensions.">
+              <Ruler size={14} />
+              Parts fitted to this body: {measured.length.toFixed(2)} m long · {measured.width.toFixed(2)} m wide ·{' '}
+              {measured.wheelbase.toFixed(2)} m wheelbase · {Math.round(measured.wheelDiameter * 1000)} mm wheels
+            </p>
+          )}
+
+          <button className={styles.real} onClick={seeForReal}>
+            <Sparkles size={20} />
+            <span>
+              <strong>See it for real</strong>
+              <small>Apply this build to a real photograph</small>
+            </span>
+          </button>
 
           <label className={styles.search}>
             <Search size={20} />

@@ -159,7 +159,7 @@ const BMW_M4_G82: VehicleAssetConfig = {
     rearBumper: 'attach',
     diffuser: 'attach',
     sideSkirts: 'attach',
-    exhaust: 'attach',
+    exhaust: 'none',
     roof: 'attach',
     taillights: 'material',
     grille: 'none',
@@ -168,6 +168,7 @@ const BMW_M4_G82: VehicleAssetConfig = {
     mirrors: 'none',
   },
   unsupportedNotes: {
+    exhaust: 'The four factory exhaust tips are part of the bumper on this 3D model and cannot be removed, so new tips cannot be fitted in 3D yet.',
     grille: 'The kidney grille shares its material with other black trim on this 3D model, so it cannot be re-skinned on its own yet.',
     headlights: 'The headlight lenses are part of the shared glass on this 3D model, so tints cannot be previewed in 3D yet.',
     carbonTrim: 'Carbon trim is not split out on this 3D model yet.',

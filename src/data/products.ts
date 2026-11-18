@@ -73,25 +73,25 @@ export const PRODUCTS: Product[] = [
   {
     id: 'spoiler-standard', slot: 'spoiler', category: 'spoilers', component: 'spoiler',
     name: 'Standard Lip Spoiler', description: 'Subtle boot-lid lip, painted in body colour.',
-    price: 12_000, impl: { kind: 'attach', model: '/models/spoilers/standard-lip.glb', attachment: 'spoiler' },
+    price: 12_000, impl: { kind: 'attach', model: '/models/spoilers/standard-lip.glb', attachment: 'spoiler', span: 0.74 },
     thumb: { kind: 'spoiler-lip' },
   },
   {
     id: 'spoiler-sport', slot: 'spoiler', category: 'spoilers', component: 'spoiler',
     name: 'Sport Blade Spoiler', description: 'Raised aero blade on gloss-black stanchions.',
-    price: 22_000, impl: { kind: 'attach', model: '/models/spoilers/sport-blade.glb', attachment: 'spoiler' },
+    price: 22_000, impl: { kind: 'attach', model: '/models/spoilers/sport-blade.glb', attachment: 'spoiler', span: 0.8 },
     thumb: { kind: 'spoiler-blade' },
   },
   {
     id: 'spoiler-carbon', slot: 'spoiler', category: 'spoilers', component: 'spoiler',
     name: 'Carbon-Fibre Ducktail', description: 'Pre-preg 2×2 twill carbon, UV clear-coated.',
-    price: 28_000, impl: { kind: 'attach', model: '/models/spoilers/carbon-ducktail.glb', attachment: 'spoiler' },
+    price: 28_000, impl: { kind: 'attach', model: '/models/spoilers/carbon-ducktail.glb', attachment: 'spoiler', span: 0.78 },
     thumb: { kind: 'spoiler-ducktail' },
   },
   {
     id: 'spoiler-gt-wing', slot: 'spoiler', category: 'spoilers', component: 'spoiler',
     name: 'GT Racing Wing', description: 'Dual-element carbon wing on swan-neck uprights.',
-    price: 35_000, impl: { kind: 'attach', model: '/models/spoilers/gt-wing.glb', attachment: 'spoiler' },
+    price: 35_000, impl: { kind: 'attach', model: '/models/spoilers/gt-wing.glb', attachment: 'spoiler', span: 0.98, uniform: true },
     thumb: { kind: 'spoiler-wing' },
   },
 
@@ -99,31 +99,31 @@ export const PRODUCTS: Product[] = [
   {
     id: 'front-sport', slot: 'frontBumper', category: 'bumpers', component: 'frontBumper',
     name: 'Sport Front Bumper Lip', description: 'Gloss-black splitter that follows the nose line.',
-    price: 25_000, impl: { kind: 'attach', model: '/models/bumpers/front-sport-lip.glb', attachment: 'frontLower' },
+    price: 25_000, impl: { kind: 'attach', model: '/models/bumpers/front-sport-lip.glb', attachment: 'frontLower', span: 0.88 },
     thumb: { kind: 'front-lip' },
   },
   {
     id: 'front-aggressive', slot: 'frontBumper', category: 'bumpers', component: 'frontBumper',
     name: 'Aggressive Front Kit', description: 'Carbon splitter with end fences and stacked canards.',
-    price: 65_000, impl: { kind: 'attach', model: '/models/bumpers/front-aggressive.glb', attachment: 'frontLower' },
+    price: 65_000, impl: { kind: 'attach', model: '/models/bumpers/front-aggressive.glb', attachment: 'frontLower', span: 1 },
     thumb: { kind: 'front-aggressive' },
   },
   {
     id: 'front-amg', slot: 'frontBumper', category: 'bumpers', component: 'frontBumper',
     name: 'AMG-Style Front Bumper', description: 'A-wing blade in body colour with chrome accent.',
-    price: 48_000, impl: { kind: 'attach', model: '/models/bumpers/front-amg-style.glb', attachment: 'frontLower' },
+    price: 48_000, impl: { kind: 'attach', model: '/models/bumpers/front-amg-style.glb', attachment: 'frontLower', span: 0.88 },
     thumb: { kind: 'front-amg' },
   },
   {
     id: 'rear-sport', slot: 'rearBumper', category: 'bumpers', component: 'rearBumper',
     name: 'Sport Rear Bumper', description: 'Lower valance with black mesh side vents.',
-    price: 38_000, impl: { kind: 'attach', model: '/models/bumpers/rear-sport-rear.glb', attachment: 'rearLower' },
+    price: 38_000, impl: { kind: 'attach', model: '/models/bumpers/rear-sport-rear.glb', attachment: 'rearLower', span: 0.875 },
     thumb: { kind: 'rear-bumper' },
   },
   {
     id: 'diffuser-sport', slot: 'diffuser', category: 'bumpers', component: 'diffuser',
     name: 'Sport Rear Diffuser', description: 'Carbon diffuser with six vertical strakes.',
-    price: 18_000, impl: { kind: 'attach', model: '/models/bumpers/rear-diffuser.glb', attachment: 'rearLower' },
+    price: 18_000, impl: { kind: 'attach', model: '/models/bumpers/rear-diffuser.glb', attachment: 'rearLower', span: 0.68 },
     thumb: { kind: 'diffuser' },
   },
 

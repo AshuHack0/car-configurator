@@ -15,15 +15,34 @@ export interface PartAttachmentProps {
   finish?: THREE.Material;
   /** Original meshes to hide while this part is fitted (restored on removal). */
   hides?: THREE.Mesh[];
+  /** Scale the part so it is `width` metres wide (see `span` on attach products). */
+  fit?: { width: number; uniform?: boolean };
 }
+
+/** Parts are never stretched or shrunk beyond this, so a bad measurement cannot produce a silly part. */
+const FIT_RANGE: [number, number] = [0.72, 1.3];
 
 /**
  * Generic component mounting system: loads a part GLB once, clones it for each
  * placement, binds its named material slots and fades it in with a short
  * scale animation. Used by wheels, spoilers, bumpers, skirts and accessories.
  */
-export function PartAttachment({ url, placements, lib, finish, hides }: PartAttachmentProps) {
+export function PartAttachment({ url, placements: authored, lib, finish, hides, fit }: PartAttachmentProps) {
   const { scene } = useModel(url);
+
+  // Fit to the car: measure the part itself, then scale it to the width this car calls for.
+  const fitWidth = fit?.width;
+  const fitUniform = fit?.uniform;
+  const placements = useMemo(() => {
+    if (!fitWidth) return authored;
+    const partWidth = new THREE.Box3().setFromObject(scene).getSize(new THREE.Vector3()).x;
+    if (!(partWidth > 0)) return authored;
+    const k = THREE.MathUtils.clamp(fitWidth / partWidth, ...FIT_RANGE);
+    return authored.map((p): Placement => ({
+      ...p,
+      scale: fitUniform ? [p.scale[0] * k, p.scale[1] * k, p.scale[2] * k] : [p.scale[0] * k, p.scale[1], p.scale[2]],
+    }));
+  }, [authored, scene, fitWidth, fitUniform]);
 
   const clones = useMemo(
     () => placements.map(() => scene.clone(true)),

@@ -10,7 +10,6 @@ import type { VehicleAssetConfig } from '@/types/vehicle';
 import styles from './ViewerOverlay.module.css';
 
 const LIGHTING: { id: StageLighting; label: string }[] = [
-  { id: 'outdoor', label: 'Outdoor' },
   { id: 'studio', label: 'Studio' },
   { id: 'warm', label: 'Warm' },
   { id: 'cool', label: 'Cool' },
