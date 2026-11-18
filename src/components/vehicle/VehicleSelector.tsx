@@ -1,27 +1,92 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowRight, Bookmark, Check } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
-import { BRANDS, getBrand, getVehicle, vehiclesByBrand } from '@/data/vehicles';
-import type { BrandId } from '@/types/vehicle';
-import { VehicleSilhouette } from './VehicleSilhouette';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { ArrowRight, Bookmark, SlidersHorizontal } from 'lucide-react';
+import { LinkButton } from '@/components/ui/Button';
+import { formatINR } from '@/data/products';
+import { BRANDS, VEHICLES, getVehicle } from '@/data/vehicles';
+import type { BodyStyle, BrandId, Vehicle } from '@/types/vehicle';
+import { VehicleArt, bodyLabel } from './VehicleCard';
 import styles from './VehicleSelector.module.css';
 
-export function VehicleSelector() {
-  const router = useRouter();
-  const params = useSearchParams();
-  const initialVehicle = getVehicle(params.get('vehicle') ?? '');
-  const initialBrand = (initialVehicle?.brand ?? (params.get('brand') as BrandId | null)) || 'mercedes';
+const BODIES: { id: BodyStyle; label: string }[] = [
+  { id: 'coupe', label: 'Coupé' },
+  { id: 'sedan', label: 'Saloon' },
+  { id: 'suv', label: 'SUV' },
+];
 
-  const [brandId, setBrandId] = useState<BrandId>(BRANDS.some((b) => b.id === initialBrand) ? initialBrand : 'mercedes');
-  const models = useMemo(() => vehiclesByBrand(brandId), [brandId]);
-  const [vehicleId, setVehicleId] = useState(initialVehicle?.id ?? models[0]?.id);
-  const vehicle = getVehicle(vehicleId) ?? models[0];
+const toggle = <T,>(list: T[], item: T) => (list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
+
+function ModelCard({ vehicle, saved }: { vehicle: Vehicle; saved: boolean }) {
   const [genCode, setGenCode] = useState(vehicle.generation);
   const generation = vehicle.generations.find((g) => g.code === genCode) ?? vehicle.generations[0];
   const [year, setYear] = useState(generation.years[0]);
+  const brand = BRANDS.find((b) => b.id === vehicle.brand)!;
+
+  const chooseGeneration = (code: string) => {
+    setGenCode(code);
+    setYear(vehicle.generations.find((g) => g.code === code)!.years[0]);
+  };
+
+  return (
+    <article id={vehicle.id} className={styles.card}>
+      <VehicleArt vehicle={vehicle} />
+      <div className={styles.cardBody}>
+        <h3>{brand.name} {vehicle.model}</h3>
+        <p className={styles.price}>From {formatINR(vehicle.basePrice)}</p>
+        <div className={styles.tags}>
+          <span>{year}</span>
+          <span>{bodyLabel(vehicle)}</span>
+          <span>{generation.code}</span>
+          {saved && <span className={styles.saved}><Bookmark size={12} /> Saved configuration</span>}
+        </div>
+
+        <dl className={styles.specs}>
+          <div>
+            <dt>Power</dt>
+            <dd>{vehicle.power}</dd>
+          </div>
+          <div>
+            <dt><label htmlFor={`gen-${vehicle.id}`}>Generation</label></dt>
+            <dd>
+              <select id={`gen-${vehicle.id}`} value={generation.code} onChange={(e) => chooseGeneration(e.target.value)}>
+                {vehicle.generations.map((g) => <option key={g.code} value={g.code}>{g.label}</option>)}
+              </select>
+            </dd>
+          </div>
+          <div>
+            <dt><label htmlFor={`year-${vehicle.id}`}>Model year</label></dt>
+            <dd>
+              <select id={`year-${vehicle.id}`} value={year} onChange={(e) => setYear(Number(e.target.value))}>
+                {generation.years.map((y) => <option key={y} value={y}>{y}</option>)}
+              </select>
+            </dd>
+          </div>
+        </dl>
+
+        <div className={styles.actions}>
+          <LinkButton
+            href={`/configurator/${vehicle.id}?gen=${encodeURIComponent(generation.code)}&year=${year}`}
+            variant="primary" size="md" icon={<ArrowRight size={18} />}
+          >
+            Configure
+          </LinkButton>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+export function VehicleSelector() {
+  const params = useSearchParams();
+  const paramVehicle = getVehicle(params.get('vehicle') ?? '');
+  const paramBrand = (paramVehicle?.brand ?? params.get('brand')) as BrandId | null;
+  const startBrand = BRANDS.some((b) => b.id === paramBrand) ? [paramBrand as BrandId] : [];
+
+  const [brands, setBrands] = useState<BrandId[]>(startBrand);
+  const [bodies, setBodies] = useState<BodyStyle[]>([]);
   const [savedIds, setSavedIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -32,92 +97,85 @@ export function VehicleSelector() {
     }
   }, []);
 
-  const chooseBrand = (id: BrandId) => {
-    setBrandId(id);
-    const first = vehiclesByBrand(id)[0];
-    if (first) chooseVehicle(first.id);
-  };
+  // Follow header / footer links that change ?brand= while this page stays mounted.
+  useEffect(() => {
+    setBrands(startBrand);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paramBrand]);
 
-  const chooseVehicle = (id: string) => {
-    const v = getVehicle(id)!;
-    setVehicleId(id);
-    setGenCode(v.generation);
-    setYear(v.generations.find((g) => g.code === v.generation)!.years[0]);
-  };
+  useEffect(() => {
+    const id = paramVehicle?.id ?? window.location.hash.slice(1);
+    if (id) document.getElementById(id)?.scrollIntoView({ block: 'center' });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const chooseGeneration = (code: string) => {
-    setGenCode(code);
-    setYear(vehicle.generations.find((g) => g.code === code)!.years[0]);
-  };
-
-  const open = () => router.push(`/configurator/${vehicle.id}?gen=${encodeURIComponent(generation.code)}&year=${year}`);
-  const brand = getBrand(brandId);
+  const matches = useMemo(
+    () => VEHICLES.filter((v) => (!brands.length || brands.includes(v.brand)) && (!bodies.length || bodies.includes(v.body))),
+    [brands, bodies],
+  );
+  const groups = BRANDS.map((b) => ({ brand: b, vehicles: matches.filter((v) => v.brand === b.id) })).filter((g) => g.vehicles.length);
+  const filtered = brands.length + bodies.length > 0;
+  const lastSaved = savedIds.find((id) => getVehicle(id));
 
   return (
     <main className={styles.page}>
       <header className={styles.head}>
-        <span className={styles.step}>Step 1 of 2</span>
-        <h1>Select your vehicle</h1>
-        <p>Choose a brand, model, generation and year. Your car opens in the 3D configurator.</p>
+        <h1>Configure your dream machine</h1>
+        <p>Choose a model, generation and year. Your car opens in the configurator.</p>
+        {lastSaved && (
+          <Link href={`/configurator/${lastSaved}`} className={styles.load}>
+            <Bookmark size={16} /> Load saved configuration
+          </Link>
+        )}
       </header>
 
-      <div className={styles.brands} role="tablist" aria-label="Brands">
-        {BRANDS.map((b) => (
-          <button
-            key={b.id} role="tab" aria-selected={b.id === brandId}
-            className={`${styles.brandTab} ${b.id === brandId ? styles.active : ''}`}
-            onClick={() => chooseBrand(b.id)}
-          >
-            {b.name}
-            <small>{vehiclesByBrand(b.id).length} models</small>
-          </button>
-        ))}
-      </div>
-
       <div className={styles.layout}>
-        <div className={styles.models}>
-          {models.map((v) => {
-            const selected = v.id === vehicle.id;
-            return (
-              <button key={v.id} className={`${styles.model} ${selected ? styles.selected : ''}`} onClick={() => chooseVehicle(v.id)}>
-                {selected && <span className={styles.tick}><Check size={14} /></span>}
-                {savedIds.includes(v.id) && <span className={styles.saved}><Bookmark size={12} /> Saved build</span>}
-                <div className={styles.modelArt}><VehicleSilhouette body={v.body} accent={brand.accent} /></div>
-                <h3>{v.model} <span>{v.generation}</span></h3>
-                <p>{v.power} · {v.body}</p>
-              </button>
-            );
-          })}
-        </div>
-
-        <aside className={styles.panel}>
-          <span className={styles.panelBrand}>{brand.name}</span>
-          <h2>{vehicle.model}</h2>
-
-          <label className={styles.label}>Generation</label>
-          <div className={styles.chips}>
-            {vehicle.generations.map((g) => (
-              <button key={g.code} className={`${styles.chip} ${g.code === generation.code ? styles.chipActive : ''}`} onClick={() => chooseGeneration(g.code)}>
-                {g.label}
-              </button>
-            ))}
+        <aside className={styles.filter} aria-label="Filter models">
+          <div className={styles.filterHead}>
+            <h2><SlidersHorizontal size={18} /> Filter</h2>
+            {filtered && <button onClick={() => { setBrands([]); setBodies([]); }}>Reset filter</button>}
           </div>
 
-          <label className={styles.label} htmlFor="year">Model year</label>
-          <select id="year" className={styles.select} value={year} onChange={(e) => setYear(Number(e.target.value))}>
-            {generation.years.map((y) => <option key={y} value={y}>{y}</option>)}
-          </select>
+          <fieldset>
+            <legend>Brand</legend>
+            {BRANDS.map((b) => (
+              <label key={b.id} className={styles.check}>
+                <input type="checkbox" checked={brands.includes(b.id)} onChange={() => setBrands((l) => toggle(l, b.id))} />
+                <span>{b.name}</span>
+                <small>{VEHICLES.filter((v) => v.brand === b.id).length}</small>
+              </label>
+            ))}
+          </fieldset>
 
-          <dl className={styles.specs}>
-            <div><dt>Body</dt><dd>{vehicle.body}</dd></div>
-            <div><dt>Power</dt><dd>{vehicle.power}</dd></div>
-            <div><dt>Chassis</dt><dd>{generation.code}</dd></div>
-          </dl>
-
-          <Button variant="primary" size="lg" className={styles.cta} onClick={open} icon={<ArrowRight size={18} />}>
-            Open 3D configurator
-          </Button>
+          <fieldset>
+            <legend>Body design</legend>
+            {BODIES.map((b) => (
+              <label key={b.id} className={styles.check}>
+                <input type="checkbox" checked={bodies.includes(b.id)} onChange={() => setBodies((l) => toggle(l, b.id))} />
+                <span>{b.label}</span>
+                <small>{VEHICLES.filter((v) => v.body === b.id).length}</small>
+              </label>
+            ))}
+          </fieldset>
         </aside>
+
+        <div className={styles.results}>
+          <p className={styles.count} aria-live="polite">{matches.length} {matches.length === 1 ? 'model' : 'models'}</p>
+          {groups.map(({ brand, vehicles }) => (
+            <section key={brand.id} className={styles.group}>
+              <h2>{brand.name} <span>Model variants</span></h2>
+              <div className={styles.grid}>
+                {vehicles.map((v) => <ModelCard key={v.id} vehicle={v} saved={savedIds.includes(v.id)} />)}
+              </div>
+            </section>
+          ))}
+          {!groups.length && (
+            <div className={styles.empty}>
+              <p>No models match this filter.</p>
+              <button onClick={() => { setBrands([]); setBodies([]); }}>Reset filter</button>
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );

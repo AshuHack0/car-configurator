@@ -125,6 +125,11 @@ export interface VehicleAssetConfig {
    * match keep their original material.
    */
   surfaces?: Record<string, SurfacePreset>;
+  /**
+   * Offline photo renders (scripts/render-vehicle.py), served as `${base}/${paintId}-${view}.jpg`.
+   * The configurator shows these in Photo view while only a listed paint is chosen.
+   */
+  renders?: { base: string; paints: string[]; views: string[] };
   /** Shown on the preview card when a component is not supported by this asset. */
   unsupportedNotes?: Record<string, string>;
   camera: { distance: number; target: Vec3 };

@@ -10,11 +10,13 @@ import type { ResolvedPaint } from '@/hooks/useConfigurator';
 import type { Configuration, Product } from '@/types/product';
 import type { VehicleAssetConfig } from '@/types/vehicle';
 import { CameraController, presetPosition, type CameraPreset } from './CameraController';
+import { LocationBackdrop } from './LocationBackdrop';
 import { ModelErrorBoundary } from './ModelErrorBoundary';
 import { VehicleModel } from './VehicleModel';
 import type { RenderQuality } from './materials';
 
-export type StageLighting = 'studio' | 'warm' | 'cool';
+/** `outdoor` is a photographed location; the others are the built-in studio. */
+export type StageLighting = 'outdoor' | 'studio' | 'warm' | 'cool';
 
 interface Props {
   asset: VehicleAssetConfig;
@@ -37,11 +39,14 @@ interface Stage { key: string; rim: string; floor: string; bg: string; walls: st
  * Bright showroom stages. `walls` is the studio surround the paint reflects:
  * kept mid-dark so the softbox strips read as crisp highlight lines on the body.
  */
-const STAGES: Record<StageLighting, Stage> = {
+const STAGES: Record<Exclude<StageLighting, 'outdoor'>, Stage> = {
   studio: { key: '#ffffff', rim: '#e6eeff', floor: '#e6e8eb', bg: '#e9ebee', walls: '#4a4f56' },
   warm: { key: '#fff1e2', rim: '#ffd9b5', floor: '#ece6df', bg: '#efe9e3', walls: '#524b45' },
   cool: { key: '#eef4ff', rim: '#b5d2ff', floor: '#e2e7ee', bg: '#e5eaf1', walls: '#454c57' },
 };
+
+/** Turns the location so its buildings sit behind the car in the opening view. */
+const LOCATION_ROTATION = Math.PI;
 
 function useIsMobile() {
   const [mobile, setMobile] = useState(false);
@@ -96,7 +101,8 @@ export default function VehicleScene({
 }: Props) {
   const mobile = useIsMobile();
   const quality: RenderQuality = mobile ? 'low' : 'high';
-  const stage = STAGES[lighting];
+  const outdoor = lighting === 'outdoor';
+  const stage = STAGES[outdoor ? 'studio' : lighting];
   const initial = presetPosition('threeQuarter', asset, hero ? 1.3 : 1);
 
   return (
@@ -115,11 +121,11 @@ export default function VehicleScene({
       style={{ touchAction: 'none' }}
     >
       <color attach="background" args={[stage.bg]} />
-      <fog attach="fog" args={[stage.bg, 16, 42]} />
+      {!outdoor && <fog attach="fog" args={[stage.bg, 16, 42]} />}
 
       {/* One soft key light for self-shadowing; all other light comes from the environment. */}
       <spotLight
-        position={[3, 10, 2]} angle={0.5} penumbra={1} intensity={45} color={stage.key}
+        position={[3, 10, 2]} angle={0.5} penumbra={1} intensity={outdoor ? 6 : 45} color={stage.key}
         castShadow={!mobile} shadow-mapSize={[2048, 2048]} shadow-bias={-0.0001} shadow-normalBias={0.02}
       />
       {/*
@@ -127,9 +133,16 @@ export default function VehicleScene({
         light paints (whites read grey against the darker reflection surround otherwise) without
         adding reflections, so dark paints and highlight lines are barely affected.
       */}
-      <hemisphereLight args={[stage.key, stage.floor, 1.1]} />
-
-      <StudioEnvironment key={lighting} stage={stage} resolution={mobile ? 256 : 512} />
+      {outdoor ? (
+        <Suspense fallback={null}>
+          <LocationBackdrop quality={quality} rotation={LOCATION_ROTATION} />
+        </Suspense>
+      ) : (
+        <>
+          <hemisphereLight args={[stage.key, stage.floor, 1.1]} />
+          <StudioEnvironment key={lighting} stage={stage} resolution={mobile ? 256 : 512} />
+        </>
+      )}
 
       <ModelErrorBoundary resetKey={`${asset.modelUrl}:${retryKey}`} onError={onError}>
         <Suspense fallback={null}>
@@ -141,18 +154,20 @@ export default function VehicleScene({
         Two-layer studio shadow: a tight, darker layer where the body meets the floor and a
         wide, faint layer for the soft ambient spread under a car lit by overhead softboxes.
       */}
-      <ContactShadows position={[0, 0.002, 0]} opacity={0.7} scale={10} blur={1.6} far={0.6} color="#10141a" resolution={mobile ? 256 : 512} />
-      <ContactShadows position={[0, 0.001, 0]} opacity={0.45} scale={14} blur={3.2} far={3} color="#1a1f27" resolution={mobile ? 256 : 512} />
+      <ContactShadows position={[0, 0.002, 0]} opacity={outdoor ? 0.95 : 0.7} scale={10} blur={1.6} far={0.6} color="#10141a" resolution={mobile ? 256 : 512} />
+      <ContactShadows position={[0, 0.001, 0]} opacity={outdoor ? 0.7 : 0.45} scale={14} blur={3.2} far={3} color="#1a1f27" resolution={mobile ? 256 : 512} />
 
       {/*
         Seamless cyclorama floor: unlit and the same tone as the backdrop, so there is
         no horizon line. Grounding comes from the soft shadow and ambient occlusion.
         toneMapped=false keeps it matched to the (untonemapped) background on phones.
       */}
-      <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]}>
-        <circleGeometry args={[50, 64]} />
-        <meshBasicMaterial color={stage.bg} toneMapped={false} fog={false} />
-      </mesh>
+      {!outdoor && (
+        <mesh rotation-x={-Math.PI / 2} position={[0, 0, 0]}>
+          <circleGeometry args={[50, 64]} />
+          <meshBasicMaterial color={stage.bg} toneMapped={false} fog={false} />
+        </mesh>
+      )}
 
       <OrbitControls
         makeDefault

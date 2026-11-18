@@ -3,71 +3,79 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: 999px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
+  border-radius: var(--radius-sm);
+  font-weight: 400;
   white-space: nowrap;
-  transition: background 0.25s var(--ease), border-color 0.25s var(--ease), transform 0.25s var(--ease), box-shadow 0.25s var(--ease), color 0.2s;
-  border: 1px solid transparent;
-}
-
-.button:active {
-  transform: scale(0.97);
+  border: 2px solid transparent;
+  transition: background 0.24s var(--ease), border-color 0.24s var(--ease), color 0.24s var(--ease);
 }
 
 .button:disabled {
-  opacity: 0.45;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
 .sm {
-  height: 34px;
-  padding: 0 14px;
-  font-size: 13px;
-}
-
-.md {
-  height: 42px;
-  padding: 0 20px;
+  height: 40px;
+  padding: 0 16px;
   font-size: 14px;
 }
 
-.lg {
-  height: 52px;
-  padding: 0 28px;
-  font-size: 15px;
+.md {
+  height: 48px;
+  padding: 0 24px;
+  font-size: 16px;
 }
 
+.lg {
+  height: 54px;
+  padding: 0 28px;
+  font-size: 16px;
+}
+
+/* Filled, near-black */
 .primary {
-  background: var(--accent);
+  background: #010205;
+  border-color: #010205;
   color: #fff;
-  box-shadow: 0 8px 30px var(--accent-glow);
 }
 
 .primary:hover {
-  background: #4f8ff7;
-  box-shadow: 0 10px 40px rgba(59, 130, 246, 0.5);
+  background: #535457;
+  border-color: #535457;
 }
 
+/* Outlined */
 .ghost {
-  border-color: var(--border-strong);
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(10px);
+  border-color: #010205;
+  color: #010205;
+  background: transparent;
 }
 
 .ghost:hover {
-  border-color: rgba(15, 23, 42, 0.32);
-  background: #ffffff;
+  background: rgba(1, 2, 5, 0.08);
 }
 
+/* Quiet grey */
 .subtle {
   background: var(--card);
-  border-color: var(--border);
+  border-color: var(--card);
   color: var(--text);
 }
 
 .subtle:hover {
   background: var(--card-hover);
-  border-color: var(--border-strong);
+  border-color: var(--card-hover);
+}
+
+/* For use on photographs */
+.light {
+  background: #fbfcff;
+  border-color: #fbfcff;
+  color: #010205;
+}
+
+.light:hover {
+  background: #cfd0d3;
+  border-color: #cfd0d3;
 }

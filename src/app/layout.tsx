@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: 'Customise every detail. Explore your vehicle in 3D. Make it yours.',
 };
 
-export const viewport: Viewport = { themeColor: '#f4f5f7', width: 'device-width', initialScale: 1 };
+export const viewport: Viewport = { themeColor: '#ffffff', width: 'device-width', initialScale: 1 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

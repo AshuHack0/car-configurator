@@ -1,89 +1,81 @@
-.presets,
-.segment {
-  display: flex;
-  padding: 4px;
-  gap: 2px;
-  border-radius: 999px;
-  background: var(--glass);
-  border: 1px solid var(--border);
-  backdrop-filter: blur(12px);
-}
-
-.presets {
+.toolbar {
   position: absolute;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 14px;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(40, 42, 46, 0.72);
+  backdrop-filter: blur(16px);
+  color: #fff;
 }
 
-.presets button,
-.segment button {
-  height: 32px;
-  min-width: 40px;
-  padding: 0 14px;
-  border-radius: 999px;
+.toolbar > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 12px;
+  border-radius: 7px;
+  font-size: 15px;
+  transition: background 0.2s;
+}
+
+.toolbar > button:hover,
+.active {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.toolbar > i {
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.flip {
+  transform: rotate(180deg);
+}
+
+.scene {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(40, 42, 46, 0.82);
+  backdrop-filter: blur(16px);
   font-size: 13px;
-  color: var(--muted);
-  display: grid;
-  place-items: center;
-  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+  animation: rise 0.25s var(--ease) both;
 }
 
-.segment button {
-  padding: 0 10px;
-  min-width: 34px;
+.scene > div {
+  margin-top: 8px;
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
 }
 
-.presets button:hover,
-.segment button:hover {
-  color: var(--text);
+.scene button {
+  height: 32px;
+  padding: 0 14px;
+  border-radius: 6px;
+  font-size: 14px;
 }
 
 .on {
-  background: var(--accent) !important;
-  color: #fff !important;
-}
-
-.tools {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.round {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  height: 42px;
-  padding: 0 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  color: var(--muted);
-  background: var(--glass);
-  border: 1px solid var(--border);
-  backdrop-filter: blur(12px);
-  transition: background 0.2s, color 0.2s;
-}
-
-.round:hover {
-  color: var(--text);
-}
-
-.hint {
-  position: absolute;
-  left: 16px;
-  bottom: 22px;
-  font-size: 12px;
-  color: var(--faint);
-  pointer-events: none;
+  background: #fff;
+  color: #010205;
 }
 
 .loader {
   position: absolute;
-  top: 64px;
+  top: 20px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
@@ -115,8 +107,7 @@
 .bar i {
   display: block;
   height: 100%;
-  background: var(--accent);
-  box-shadow: 0 0 10px var(--accent);
+  background: #010205;
   transition: width 0.3s var(--ease);
 }
 
@@ -126,9 +117,8 @@
   transform: translate(-50%, -50%);
   width: min(440px, calc(100% - 32px));
   padding: 28px;
-  border-radius: var(--radius-lg);
-  background: var(--card);
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 20px;
+  background: #fff;
   text-align: center;
   color: var(--warning);
   box-shadow: var(--shadow);
@@ -166,45 +156,45 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 36px;
-  padding: 0 16px;
-  border-radius: 999px;
-  background: var(--accent);
+  height: 40px;
+  padding: 0 18px;
+  border-radius: 8px;
+  background: #010205;
   color: #fff;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .preview {
   position: absolute;
-  left: 16px;
-  top: 64px;
-  width: min(360px, calc(100% - 32px));
+  left: 14px;
+  top: 14px;
+  width: min(380px, calc(100% - 28px));
   display: flex;
   gap: 14px;
   padding: 14px;
-  border-radius: var(--radius);
-  background: var(--glass);
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow);
   backdrop-filter: blur(12px);
-  animation: slideIn 0.35s var(--ease) both;
+  animation: rise 0.3s var(--ease) both;
 }
 
 .previewTag {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 10.5px;
+  font-size: 11px;
   color: var(--warning);
 }
 
 .preview h4 {
   margin-top: 4px;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .preview p {
   margin-top: 4px;
-  font-size: 12px;
+  font-size: 12.5px;
   line-height: 1.45;
   color: var(--muted);
 }
@@ -216,65 +206,43 @@
   color: var(--faint);
 }
 
-.close:hover {
-  color: var(--text);
-}
-
 .toast {
   position: absolute;
   left: 50%;
-  bottom: 72px;
+  top: 20px;
   transform: translateX(-50%);
   padding: 10px 18px;
-  border-radius: 999px;
-  background: var(--text);
-  color: var(--bg);
-  font-size: 13px;
-  font-weight: 500;
+  border-radius: 8px;
+  background: #010205;
+  color: #fff;
+  font-size: 14px;
   white-space: nowrap;
   box-shadow: var(--shadow);
-  animation: toast 0.35s var(--ease) both;
+  animation: rise 0.3s var(--ease) both;
 }
 
-@keyframes slideIn {
+@keyframes rise {
   from {
     opacity: 0;
-    transform: translateX(-10px);
-  }
-}
-
-@keyframes toast {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 10px);
+    margin-top: 8px;
   }
 }
 
 @media (max-width: 900px) {
-  .presets {
-    top: 10px;
+  .toolbar {
+    left: 8px;
+    bottom: 8px;
   }
-  .presets button {
+  .toolbar > button {
+    height: 34px;
     padding: 0 10px;
-    font-size: 12px;
   }
-  .hint {
+  .toolbar > button span {
     display: none;
   }
-  .tools {
-    right: 10px;
-    bottom: 10px;
-  }
-  .round {
-    height: 40px;
-    padding: 0 12px;
-  }
-  .round span {
-    display: none;
-  }
-  .preview {
-    top: auto;
-    bottom: 64px;
-    left: 10px;
-  }
+}
+
+.toolbar > button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }

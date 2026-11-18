@@ -1,36 +1,34 @@
 'use client';
 
+import { useState } from 'react';
 import { useProgress } from '@react-three/drei';
-import { AlertTriangle, Eye, Pause, Play, RefreshCw, Snowflake, Sun, Sunset, X } from 'lucide-react';
+import { AlertTriangle, Box, ChevronUp, Eye, Image as ImageIcon, Maximize2, RefreshCw, Rotate3d, X } from 'lucide-react';
 import { ProductThumb } from '@/components/products/ProductThumb';
-import type { CameraPreset } from '@/three/CameraController';
 import type { StageLighting } from '@/three/VehicleScene';
 import type { Product } from '@/types/product';
 import type { VehicleAssetConfig } from '@/types/vehicle';
 import styles from './ViewerOverlay.module.css';
 
-const PRESETS: { id: CameraPreset; label: string }[] = [
-  { id: 'threeQuarter', label: '3/4' },
-  { id: 'front', label: 'Front' },
-  { id: 'side', label: 'Side' },
-  { id: 'rear', label: 'Rear' },
-  { id: 'top', label: 'Top' },
-];
-
-const LIGHTING: { id: StageLighting; label: string; icon: JSX.Element }[] = [
-  { id: 'studio', label: 'Studio', icon: <Sun size={15} /> },
-  { id: 'warm', label: 'Warm', icon: <Sunset size={15} /> },
-  { id: 'cool', label: 'Cool', icon: <Snowflake size={15} /> },
+const LIGHTING: { id: StageLighting; label: string }[] = [
+  { id: 'outdoor', label: 'Outdoor' },
+  { id: 'studio', label: 'Studio' },
+  { id: 'warm', label: 'Warm' },
+  { id: 'cool', label: 'Cool' },
 ];
 
 interface Props {
   asset: VehicleAssetConfig;
-  preset: CameraPreset;
-  onPreset: (p: CameraPreset) => void;
+  /** What the stage is showing: an offline photo render or the live 3D viewer. */
+  mode: 'photo' | '3d';
+  /** Set when photo view exists for this car but cannot show the current choices. */
+  photoNote: string | null;
+  /** Undefined when the vehicle has no photo renders. */
+  onMode?: (mode: 'photo' | '3d') => void;
   lighting: StageLighting;
   onLighting: (l: StageLighting) => void;
   autoRotate: boolean;
   onAutoRotate: () => void;
+  onFullscreen: () => void;
   loadError: string | null;
   onRetry: () => void;
   previewProduct: Product | null;
@@ -42,34 +40,51 @@ interface Props {
 export function ViewerOverlay(props: Props) {
   const { progress, active, item } = useProgress();
   const loadingVehicle = active && item?.includes('/vehicles/');
+  const [sceneOpen, setSceneOpen] = useState(false);
 
   return (
     <>
-      <div className={styles.presets} role="toolbar" aria-label="Camera views">
-        {PRESETS.map((p) => (
-          <button key={p.id} className={props.preset === p.id ? styles.on : ''} onClick={() => props.onPreset(p.id)}>{p.label}</button>
-        ))}
-      </div>
-
-      <div className={styles.tools}>
-        <div className={styles.segment} role="radiogroup" aria-label="Stage lighting">
-          {LIGHTING.map((l) => (
-            <button key={l.id} role="radio" aria-checked={props.lighting === l.id} title={`${l.label} lighting`}
-              className={props.lighting === l.id ? styles.on : ''} onClick={() => props.onLighting(l.id)}>
-              {l.icon}
+      <div className={styles.toolbar}>
+        {sceneOpen && props.mode === '3d' && (
+          <div className={styles.scene} role="radiogroup" aria-label="Scene">
+            <span>Background</span>
+            <div>
+              {LIGHTING.map((l) => (
+                <button key={l.id} role="radio" aria-checked={props.lighting === l.id}
+                  className={props.lighting === l.id ? styles.on : ''} onClick={() => props.onLighting(l.id)}>
+                  {l.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {props.onMode && (
+          <>
+            <button onClick={() => props.onMode?.('photo')} disabled={!!props.photoNote} title={props.photoNote ?? 'Photo-quality images'}
+              aria-pressed={props.mode === 'photo'} className={props.mode === 'photo' ? styles.active : ''}>
+              <ImageIcon size={16} /> <span>Photo</span>
             </button>
-          ))}
-        </div>
-        <button className={`${styles.round} ${props.autoRotate ? styles.on : ''}`} onClick={props.onAutoRotate}
-          title={props.autoRotate ? 'Stop 360° turntable' : 'Start 360° turntable'} aria-pressed={props.autoRotate}>
-          {props.autoRotate ? <Pause size={15} /> : <Play size={15} />}
-          <span>360°</span>
-        </button>
+            <button onClick={() => props.onMode?.('3d')} aria-pressed={props.mode === '3d'} className={props.mode === '3d' ? styles.active : ''}>
+              <Box size={16} /> <span>Live 3D</span>
+            </button>
+            <i />
+          </>
+        )}
+        {props.mode === '3d' && (
+          <>
+            <button onClick={() => setSceneOpen((o) => !o)} aria-expanded={sceneOpen}>
+              <ChevronUp size={16} className={sceneOpen ? styles.flip : ''} /> <span>Adjust scene</span>
+            </button>
+            <button onClick={props.onAutoRotate} aria-pressed={props.autoRotate} className={props.autoRotate ? styles.active : ''}>
+              <Rotate3d size={16} /> <span>360° View</span>
+            </button>
+            <i />
+          </>
+        )}
+        <button onClick={props.onFullscreen} aria-label="Full screen" title="Full screen"><Maximize2 size={16} /></button>
       </div>
 
-      <p className={styles.hint}>Drag to rotate · Scroll or pinch to zoom</p>
-
-      {active && (
+      {active && props.mode === '3d' && (
         <div className={`${styles.loader} ${loadingVehicle ? styles.loaderFull : ''}`}>
           <span>{loadingVehicle ? 'Loading 3D vehicle' : 'Fitting component'} · {Math.round(progress)}%</span>
           <div className={styles.bar}><i style={{ width: `${progress}%` }} /></div>

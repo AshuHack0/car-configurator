@@ -31,6 +31,9 @@ Bumpers: Sport Rear Diffuser → open the price pill (bottom right) → **Save**
 - **Paint** — `MeshPhysicalMaterial` base coat under a mirror-smooth clear coat; solid colours are non-metallic.
 - **Studio** — a procedural photo studio rendered into the environment map (dark surround, long softbox strips,
   light floor for the lower-body horizon reflection). Nothing is downloaded.
+- **Outdoor scene (default in the configurator)** — a photographed location ("Dresden Square", Poly Haven, CC0) in
+  `public/env/`: a 1k HDR lights the car, and an 8k JPG (4k on phones) is ground-projected so the car stands on the
+  real paving (`src/three/LocationBackdrop.tsx`). The studio scenes remain under Adjust scene.
 - **Camera & post** — ~30° lens, N8AO ambient occlusion, subtle bloom, Khronos PBR Neutral tone mapping (true paint
   colours), two-layer soft contact shadow on a seamless cyclorama floor.
 - **Phones** — alpha-blended glass instead of transmission, no post-processing, smaller shadow/env maps.

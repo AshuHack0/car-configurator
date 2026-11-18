@@ -2,7 +2,7 @@ import Link from 'next/link';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 import styles from './Button.module.css';
 
-type Variant = 'primary' | 'ghost' | 'subtle';
+type Variant = 'primary' | 'ghost' | 'subtle' | 'light';
 type Size = 'sm' | 'md' | 'lg';
 
 interface Common {

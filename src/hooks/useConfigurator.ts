@@ -48,7 +48,7 @@ export function resolvePaint(paint: Configuration['paint'], own?: OwnPaint): Res
   if (paint.id === 'custom') {
     const f = finishFor(paint.finish);
     return {
-      id: 'custom', name: `Custom ${f.name}`, color: paint.color ?? '#3b82f6',
+      id: 'custom', name: `Custom ${f.name}`, color: paint.color ?? '#31506e',
       metalness: f.metalness, roughness: f.roughness, clearcoat: f.clearcoat, clearcoatRoughness: 0.06, price: CUSTOM_PAINT_PRICE,
     };
   }

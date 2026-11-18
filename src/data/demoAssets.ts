@@ -235,6 +235,11 @@ const PORSCHE_911_991: VehicleAssetConfig = {
     mirrors: 'Mirrors are part of the body mesh on this 3D model, so the caps cannot be swapped in 3D yet.',
   },
   camera: { distance: 9.4, target: [0, 0.58, 0] },
+  renders: {
+    base: '/renders/porsche-911',
+    paints: ['factory', 'gloss-black', 'matte-black', 'pearl-white', 'metallic-silver', 'racing-red', 'midnight-blue'],
+    views: ['threeQuarter', 'wheel', 'side', 'rearQuarter', 'top', 'front', 'rear'],
+  },
 };
 
 export const VEHICLE_ASSETS: Record<string, VehicleAssetConfig> = {
