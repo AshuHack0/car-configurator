@@ -2,7 +2,7 @@
  * Shrinks a GLB exported from Blender for the web: drops duplicates and unused data,
  * converts textures to WebP and Draco-compresses the geometry. Node and material names are kept.
  *
- *   node scripts/optimize-glb.mjs <in.glb> <out.glb> [maxTextureSize=1024]
+ *   node scripts/optimize-glb.mjs <in.glb> <out.glb> [maxTextureSize=2048]
  */
 import { statSync } from 'node:fs';
 import { NodeIO } from '@gltf-transform/core';
@@ -11,7 +11,7 @@ import { dedup, draco, prune, textureCompress, weld } from '@gltf-transform/func
 import draco3d from 'draco3dgltf';
 import sharp from 'sharp';
 
-const [input, output, max = '1024'] = process.argv.slice(2);
+const [input, output, max = '2048'] = process.argv.slice(2);
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({
   'draco3d.decoder': await draco3d.createDecoderModule(),
   'draco3d.encoder': await draco3d.createEncoderModule(),
@@ -21,8 +21,8 @@ await doc.transform(
   dedup(),
   prune({ keepLeaves: true }),
   weld(),
-  textureCompress({ encoder: sharp, targetFormat: 'webp', quality: 82, resize: [Number(max), Number(max)] }),
-  draco({ quantizePosition: 14, quantizeNormal: 10 }),
+  textureCompress({ encoder: sharp, targetFormat: 'webp', quality: 90, resize: [Number(max), Number(max)] }),
+  draco({ quantizePosition: 14, quantizeNormal: 12 }),
 );
 await io.write(output, doc);
 const root = doc.getRoot();

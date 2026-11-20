@@ -47,14 +47,15 @@ for img in bpy.data.images:
 
 # Smoothing level, then extra thinning for parts that are far denser than a browser needs.
 DECIMATE = [
-    (r'^Brake Disc', 0.12), (r'^Caliper', 0.3), (r'^Tire', 0.45), (r'^Wheelhub', 0.5), (r'^Rim Emblem', 0.3),
-    (r'Seat|Dashboard|Plane\.0(27|57)|^Shell$|CenterConsole|Vents|Knobs|SeatBelts|SteeringWheel', 0.35),
-    (r'Emitters Headlight|Reflector Highbeam|WindsheildWiper|Emblem Front', 0.4),
+    (r'^Brake Disc', 0.25), (r'^Caliper', 0.5), (r'^Tire', 0.7), (r'^Rim Emblem', 0.4),
+    (r'Seat|Dashboard|Plane\.0(27|57)|^Shell$|CenterConsole|Vents|Knobs|SeatBelts|SteeringWheel', 0.6),
+    (r'Emitters Headlight|Reflector Highbeam|WindsheildWiper', 0.5),
 ]
 for o in bpy.data.objects:
     for m in o.modifiers:
         if m.type == 'SUBSURF':
-            m.levels = min(max(m.levels, 1), 2 if collection_of.get(o.name) in ('BodyPanels', 'Glass') else 1)
+            # Painted panels and glass get the model's full render smoothness: reflections show every facet.
+            m.levels = 2 if collection_of.get(o.name) in ('BodyPanels', 'Glass') else min(max(m.levels, 1), 1)
     for pattern, ratio in DECIMATE:
         if re.search(pattern, o.name):
             d = o.modifiers.new('web', 'DECIMATE')

@@ -44,9 +44,9 @@ interface Stage { key: string; rim: string; floor: string; bg: string; pool: str
  * kept mid-dark so the softbox strips read as crisp highlight lines on the body.
  */
 const STAGES: Record<Exclude<StageLighting, 'outdoor'>, Stage> = {
-  studio: { key: '#ffffff', rim: '#e6eeff', floor: '#e6e8eb', bg: '#dcdfe3', pool: '#f7f8f9', walls: '#565b63' },
-  warm: { key: '#fff1e2', rim: '#ffd9b5', floor: '#ece6df', bg: '#e2dcd5', pool: '#faf6f1', walls: '#5c554f' },
-  cool: { key: '#eef4ff', rim: '#b5d2ff', floor: '#e2e7ee', bg: '#d6dce5', pool: '#f3f6fa', walls: '#505864' },
+  studio: { key: '#ffffff', rim: '#e6eeff', floor: '#e6e8eb', bg: '#dcdfe3', pool: '#f7f8f9', walls: '#7b8088' },
+  warm: { key: '#fff1e2', rim: '#ffd9b5', floor: '#ece6df', bg: '#e2dcd5', pool: '#faf6f1', walls: '#827a73' },
+  cool: { key: '#eef4ff', rim: '#b5d2ff', floor: '#e2e7ee', bg: '#d6dce5', pool: '#f3f6fa', walls: '#727b88' },
 };
 
 /** Turns the location so its buildings sit behind the car in the opening view. */
@@ -72,7 +72,7 @@ function Softboxes({ stage }: { stage: Stage }) {
   return (
     <>
       {/* Overhead softbox: kept narrow so the roof and bonnet show a defined highlight, not a white wash. */}
-      <Lightformer form="rect" intensity={1.6} color={stage.key} position={[0, 7, 0]} rotation-x={Math.PI / 2} scale={[9, 2.2, 1]} />
+      <Lightformer form="rect" intensity={1.9} color={stage.key} position={[0, 7, 0]} rotation-x={Math.PI / 2} scale={[10, 3, 1]} />
       {/* Long horizontal strips: the shoulder-line highlights you see in car photography. */}
       <Lightformer form="rect" intensity={2.2} color={stage.key} position={[-7, 1.6, 0]} rotation-y={Math.PI / 2} scale={[16, 0.35, 1]} />
       <Lightformer form="rect" intensity={2.2} color={stage.key} position={[7, 1.6, 0]} rotation-y={-Math.PI / 2} scale={[16, 0.35, 1]} />

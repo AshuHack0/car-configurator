@@ -122,6 +122,14 @@ export function VehicleModel({ asset, config, paint, supported, quality, onMeasu
       mesh.castShadow = true;
       mesh.receiveShadow = true;
       const source = mesh.material as THREE.Material;
+      // Sharper textures at glancing angles (seat leather, tyre sidewalls, lamp internals).
+      const std = source as THREE.MeshStandardMaterial;
+      for (const map of [std.map, std.normalMap, std.roughnessMap, std.metalnessMap, std.aoMap, std.emissiveMap]) {
+        if (map && map.anisotropy < 8) {
+          map.anisotropy = 8;
+          map.needsUpdate = true;
+        }
+      }
       const preset = presetFor(mesh, source);
       if (source.name === asset.paintMaterial) {
         mesh.material = lib.paint;
