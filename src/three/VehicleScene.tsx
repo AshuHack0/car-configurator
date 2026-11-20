@@ -9,7 +9,7 @@ import { ToneMappingMode } from 'postprocessing';
 import type { ResolvedPaint } from '@/hooks/useConfigurator';
 import type { Configuration, Product } from '@/types/product';
 import type { VehicleAssetConfig } from '@/types/vehicle';
-import { CameraController, presetPosition, type CameraPreset } from './CameraController';
+import { CABIN_REACH, CameraController, presetPosition, type CameraPreset } from './CameraController';
 import { LocationBackdrop } from './LocationBackdrop';
 import { ModelErrorBoundary } from './ModelErrorBoundary';
 import { VehicleModel } from './VehicleModel';
@@ -34,6 +34,7 @@ interface Props {
   onError?: (error: Error) => void;
   /** Dimensions measured from the loaded 3D body (m). */
   onMeasured?: (dimensions: VehicleRig['dimensions']) => void;
+  doorsOpen?: boolean;
 }
 
 interface Stage { key: string; rim: string; floor: string; bg: string; pool: string; walls: string }
@@ -132,8 +133,10 @@ function StudioFloor({ stage }: { stage: Stage }) {
 
 export default function VehicleScene({
   asset, config, paint, supported, preset = 'threeQuarter', presetNonce = 0, lighting = 'studio',
-  autoRotate = false, hero = false, retryKey = 0, onError, onMeasured,
+  autoRotate = false, hero = false, retryKey = 0, onError, onMeasured, doorsOpen = false,
 }: Props) {
+  /** Seated inside: the camera turns on the spot instead of circling the car. */
+  const cabin = preset === 'interior' && !!asset.cabin && !hero;
   const mobile = useIsMobile();
   const quality: RenderQuality = mobile ? 'low' : 'high';
   const outdoor = lighting === 'outdoor';
@@ -181,7 +184,7 @@ export default function VehicleScene({
 
       <ModelErrorBoundary resetKey={`${asset.modelUrl}:${retryKey}`} onError={onError}>
         <Suspense fallback={null}>
-          <VehicleModel asset={asset} config={config} paint={paint} supported={supported} quality={quality} onMeasured={onMeasured} />
+          <VehicleModel asset={asset} config={config} paint={paint} supported={supported} quality={quality} onMeasured={onMeasured} doorsOpen={doorsOpen} />
         </Suspense>
       </ModelErrorBoundary>
 
@@ -205,11 +208,13 @@ export default function VehicleScene({
         enableDamping
         dampingFactor={0.08}
         enablePan={false}
-        enableZoom={!hero}
-        minDistance={4.5}
-        maxDistance={20}
-        maxPolarAngle={Math.PI / 2 - 0.04}
-        autoRotate={autoRotate || hero}
+        enableZoom={!hero && !cabin}
+        minDistance={cabin ? CABIN_REACH : 4.5}
+        maxDistance={cabin ? CABIN_REACH : 20}
+        maxPolarAngle={cabin ? Math.PI * 0.72 : Math.PI / 2 - 0.04}
+        minPolarAngle={cabin ? Math.PI * 0.22 : 0}
+        rotateSpeed={cabin ? -0.45 : 1}
+        autoRotate={!cabin && (autoRotate || hero)}
         autoRotateSpeed={hero ? 0.5 : 1}
       />
       {!hero && <CameraController asset={asset} preset={preset} nonce={presetNonce} />}

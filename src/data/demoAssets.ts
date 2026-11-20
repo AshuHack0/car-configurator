@@ -243,10 +243,123 @@ const PORSCHE_911_991: VehicleAssetConfig = {
   },
 };
 
+/**
+ * Volvo S90 from a full Blender model (scripts/export-volvo-s90.py). Unlike the other cars its
+ * panels, lights, wheels, brakes and exhaust are separate, correctly named parts built to the
+ * real car's dimensions.
+ */
+const VOLVO_S90: VehicleAssetConfig = {
+  id: 'volvo-s90',
+  label: 'Volvo S90',
+  modelUrl: '/models/vehicles/volvo-s90.glb',
+  credit: '"Volvo S90" by lazercar (CGTrader)',
+  standIn: false,
+  generations: ['SPA'],
+  vehicles: ['volvo-s90'],
+  shortLabel: 'Volvo S90',
+  forward: '+z',
+  scale: 1,
+  paintMaterial: 'Car Paint',
+  wheels: { nodes: ['wheel_fl', 'wheel_fr', 'wheel_rl', 'wheel_rr'], keep: /brake|caliper|wheelhub/i },
+  // Mirrors are left out so the measured width is the body, not mirror tip to mirror tip.
+  bodyMeshes: [
+    'Body Frame', 'Hood', 'Trunk', 'Bumper Front', 'Bumper Rear', 'Fender Front',
+    'Door Front L', 'Door Front R', 'Door Rear L', 'Door Rear R',
+    'Windsheild ', 'Windsheild Rear ', 'SunRoof', 'Exhaust System', 'LowerGrille',
+  ],
+  attachments: {
+    spoiler: { from: [0, 3, -2.2], dir: [0, -1, 0], offset: [0, -0.004, 0] },
+    frontLower: { from: [0, 0.27, 4], dir: [0, 0, -1], offset: [0, -0.07, -0.02] },
+    rearLower: { from: [0, 0.3, -4], dir: [0, 0, 1], offset: [0, -0.06, 0.04] },
+    roof: { from: [0, 3, -0.2], dir: [0, -1, 0], offset: [0, -0.004, 0] },
+    exhaust: { from: [0.6, 0.31, -4], dir: [0, 0, 1], offset: [0, 0, -0.02], mirrorX: true },
+  },
+  sideSkirt: { height: 0.17, inset: 0.04, gapFactor: 1.15 },
+  meshGroups: {
+    taillights: ['mat:Glass Taillight'],
+    headlightGlass: ['mat:Glass headlights'],
+    grille: ['Grille'],
+  },
+  // Only untextured materials are listed: the textured ones (cabin, tyres, rims, lamp internals) keep their maps.
+  surfaces: {
+    'mat:Glass': { kind: 'glass', color: '#cfd6db' },
+    'mat:Glass headlights': { kind: 'lens', color: '#ffffff', roughness: 0.02 },
+    'mat:GlassRunninglight': { kind: 'lens', color: '#ffffff', roughness: 0.1 },
+    'mat:heaxagon glass': { kind: 'lens', color: '#f2f2f2', roughness: 0.1 },
+    'mat:Glass Taillight': { kind: 'lens', color: '#a8000c', roughness: 0.05 },
+    'mat:Glass_wavey': { kind: 'lens', color: '#ffffff', roughness: 0.25 },
+    'mat:Translucent_Glass': { kind: 'lens', color: '#c2141c', roughness: 0.35 },
+    'mat:Translucent_Glass.001': { kind: 'lens', color: '#c2141c', roughness: 0.35 },
+    'mat:turnsignal': { kind: 'lens', color: '#ff8a1e', roughness: 0.1 },
+    'mat:emission': { kind: 'accent', color: '#3a0005', emissive: '#ff1010', emissiveIntensity: 0.9 },
+    'mat:Black Glass': { kind: 'glossPlastic', color: '#050506' },
+    'mat:Black Glossy': { kind: 'glossPlastic', color: '#08090a' },
+    'mat:Chrome': { kind: 'chrome' },
+    'mat:chrome.001': { kind: 'chrome' },
+    'mat:tailpipes': { kind: 'chrome', roughness: 0.1 },
+    'mat:Metal Turnsignal': { kind: 'chrome', roughness: 0.14 },
+    'mat:Metal Rough': { kind: 'metal', color: '#b9bcc1', roughness: 0.3 },
+    'mat:metal_rough.002': { kind: 'metal', color: '#8d9095', roughness: 0.35 },
+    'mat:Metal Black Rough': { kind: 'metal', color: '#101113', roughness: 0.3 },
+    'mat:Plastic': { kind: 'plastic', color: '#101112', roughness: 0.55 },
+    'mat:rubber': { kind: 'rubber', color: '#0a0a0b' },
+    'mat:null': { kind: 'plastic', color: '#050505', roughness: 0.8 },
+  },
+  support: {
+    wheels: 'replace',
+    spoiler: 'attach',
+    frontBumper: 'attach',
+    rearBumper: 'attach',
+    diffuser: 'attach',
+    sideSkirts: 'attach',
+    exhaust: 'none',
+    roof: 'attach',
+    headlights: 'material',
+    taillights: 'material',
+    grille: 'material',
+    interior: 'material',
+    carbonTrim: 'none',
+    mirrors: 'none',
+  },
+  unsupportedNotes: {
+    exhaust: 'The factory tailpipes sit inside shaped openings in the rear bumper, so different tips need a matching bumper and cannot be fitted in 3D yet.',
+    carbonTrim: 'Carbon trim is not set up on this 3D model yet.',
+    mirrors: 'Mirror caps are not set up on this 3D model yet.',
+  },
+  camera: { distance: 10.4, target: [0, 0.62, 0] },
+  doors: [
+    { node: 'door_fl', angle: 62 }, { node: 'door_fr', angle: 62 },
+    { node: 'door_rl', angle: 58 }, { node: 'door_rr', angle: 58 },
+  ],
+  // Left-hand drive: the eye sits a little inboard of the driver's headrest, looking at the dashboard.
+  cabin: { eye: [0.24, 1.17, -0.12], look: [0.05, 0.92, 0.75] },
+  // Written by scripts/export-interior-sets.mjs. The black interior is the one inside the GLB.
+  interior: {
+    base: '/models/vehicles/volvo-s90-interior',
+    sets: {
+      tan: {
+        'Front Seat': 'tan-front-seat.webp', 'Rear Seats': 'tan-rear-seats.webp', DoorPanelFront: 'tan-door-front.webp',
+        DoorPanelRear: 'tan-door-rear.webp', CenterConsole: 'tan-console.webp', Dashboard: 'tan-dashboard.webp',
+        Shell: 'tan-shell.webp', Steeringwheel: 'tan-steering.webp',
+      },
+      brown: {
+        'Front Seat': 'brown-front-seat.webp', 'Rear Seats': 'brown-rear-seats.webp', DoorPanelFront: 'brown-door-front.webp',
+        DoorPanelRear: 'brown-door-rear.webp', CenterConsole: 'brown-console.webp', Dashboard: 'brown-dashboard.webp',
+        Shell: 'brown-shell.webp',
+      },
+      blue: {
+        'Front Seat': 'blue-front-seat.webp', 'Rear Seats': 'blue-rear-seats.webp', DoorPanelFront: 'blue-door-front.webp',
+        DoorPanelRear: 'blue-door-rear.webp', CenterConsole: 'blue-console.webp', Shell: 'blue-shell.webp',
+      },
+    },
+  },
+};
+
 export const VEHICLE_ASSETS: Record<string, VehicleAssetConfig> = {
   [STAND_IN.id]: STAND_IN,
   [BMW_M4_G82.id]: BMW_M4_G82,
   [PORSCHE_911_991.id]: PORSCHE_911_991,
+  [VOLVO_S90.id]: VOLVO_S90,
 };
 
 /** Every asset whose model needs a credit line (CC licences). */

@@ -6,6 +6,7 @@ export const BRANDS: Brand[] = [
   { id: 'audi', name: 'Audi', tagline: 'Progress through technology', accent: '#E11D48' },
   { id: 'porsche', name: 'Porsche', tagline: 'There is no substitute', accent: '#F59E0B' },
   { id: 'lamborghini', name: 'Lamborghini', tagline: 'Expect the unexpected', accent: '#EAB308' },
+  { id: 'volvo', name: 'Volvo', tagline: 'For life', accent: '#1F3A5F' },
 ];
 
 const range = (from: number, to: number) => Array.from({ length: to - from + 1 }, (_, i) => to - i);
@@ -173,6 +174,13 @@ export const VEHICLES: Vehicle[] = [
     generations: [
       { code: 'LP610-4', label: 'LP 610-4 (2014–2019)', years: range(2014, 2019) },
       { code: 'EVO', label: 'EVO (2019–2024)', years: range(2019, 2024) },
+    ],
+  },
+  {
+    id: 'volvo-s90', brand: 'volvo', model: 'S90', generation: 'SPA', body: 'sedan',
+    basePrice: 6_825_000, power: '250 hp', assetId: 'volvo-s90',
+    generations: [
+      { code: 'SPA', label: 'SPA (2016–present)', years: range(2016, 2025) },
     ],
   },
 ];

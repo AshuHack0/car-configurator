@@ -1,6 +1,6 @@
 export type Vec3 = [number, number, number];
 
-export type BrandId = 'mercedes' | 'bmw' | 'audi' | 'porsche' | 'lamborghini';
+export type BrandId = 'mercedes' | 'bmw' | 'audi' | 'porsche' | 'lamborghini' | 'volvo';
 
 export interface Brand {
   id: BrandId;
@@ -133,4 +133,16 @@ export interface VehicleAssetConfig {
   /** Shown on the preview card when a component is not supported by this asset. */
   unsupportedNotes?: Record<string, string>;
   camera: { distance: number; target: Vec3 };
+  /**
+   * Doors that can swing open. Each node sits on its door's hinge line with the door's parts as
+   * children; `angle` is how far it opens, in degrees.
+   */
+  doors?: { node: string; angle: number }[];
+  /** Seated viewpoint inside the cabin: where the eye is and what it looks at first. */
+  cabin?: { eye: Vec3; look: Vec3 };
+  /**
+   * Alternative interior trims. For each set, the colour texture to use for each cabin material
+   * (by material name). Materials not listed keep the texture that ships in the GLB.
+   */
+  interior?: { base: string; sets: Record<string, Record<string, string>> };
 }

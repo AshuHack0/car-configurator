@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useProgress } from '@react-three/drei';
-import { AlertTriangle, Box, ChevronUp, Eye, Image as ImageIcon, Maximize2, RefreshCw, Rotate3d, X } from 'lucide-react';
+import { AlertTriangle, Box, DoorOpen, ChevronUp, Eye, Image as ImageIcon, Maximize2, RefreshCw, Rotate3d, X } from 'lucide-react';
 import { ProductThumb } from '@/components/products/ProductThumb';
 import type { StageLighting } from '@/three/VehicleScene';
 import type { Product } from '@/types/product';
@@ -27,6 +27,9 @@ interface Props {
   onLighting: (l: StageLighting) => void;
   autoRotate: boolean;
   onAutoRotate: () => void;
+  doorsOpen?: boolean;
+  /** Undefined when the vehicle's doors cannot open. */
+  onDoors?: () => void;
   onFullscreen: () => void;
   loadError: string | null;
   onRetry: () => void;
@@ -77,6 +80,11 @@ export function ViewerOverlay(props: Props) {
             <button onClick={props.onAutoRotate} aria-pressed={props.autoRotate} className={props.autoRotate ? styles.active : ''}>
               <Rotate3d size={16} /> <span>360° View</span>
             </button>
+            {props.onDoors && (
+              <button onClick={props.onDoors} aria-pressed={!!props.doorsOpen} className={props.doorsOpen ? styles.active : ''}>
+                <DoorOpen size={16} /> <span>{props.doorsOpen ? 'Close doors' : 'Open doors'}</span>
+              </button>
+            )}
             <i />
           </>
         )}

@@ -177,6 +177,17 @@ function Art({ product, finishColor }: { product: Product; finishColor?: string 
         </g>
       );
     }
+    case 'interior': {
+      const leather = design ?? '#1a1a1c';
+      return (
+        <g stroke="#00000055" strokeWidth="1">
+          <rect x="44" y="14" width="32" height="20" rx="7" fill={leather} />
+          <rect x="34" y="34" width="52" height="46" rx="12" fill={leather} />
+          <path d="M44 42v30M60 42v30M76 42v30" stroke="#00000040" fill="none" />
+          <rect x="28" y="78" width="64" height="24" rx="9" fill={leather} />
+        </g>
+      );
+    }
     case 'carbon':
       return <rect x="22" y="30" width="76" height="60" rx="10" fill={CARBON} stroke="#4b5260" />;
     default:

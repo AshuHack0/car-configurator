@@ -18,8 +18,9 @@ const SECTION_TITLES: Record<CategoryId, string> = {
   skirts: 'Side Skirts',
   lighting: 'Lights & Vision',
   accessories: 'Exterior Accessories',
+  interior: 'Interior',
 };
-const ORDER: CategoryId[] = ['paint', 'wheels', 'spoilers', 'bumpers', 'skirts', 'lighting', 'accessories'];
+const ORDER: CategoryId[] = ['paint', 'wheels', 'spoilers', 'bumpers', 'skirts', 'lighting', 'accessories', 'interior'];
 
 const price = (n: number) => formatINR(n);
 
@@ -51,6 +52,8 @@ export function OptionSections(props: Props) {
     <div className={styles.sections}>
       {ORDER.map((id) => {
         const category = CATEGORIES.find((c) => c.id === id)!;
+        // Interior trims only exist for cars whose 3D model has a cabin; hide the section elsewhere.
+        if (id === 'interior' && !PRODUCTS.some((p) => p.category === 'interior' && props.supportFor(p) !== 'none')) return null;
         const title = SECTION_TITLES[id];
         const sectionMatches = matches(title);
         const slots = category.slots

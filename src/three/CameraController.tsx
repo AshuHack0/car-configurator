@@ -6,7 +6,12 @@ import { useFrame, useThree } from '@react-three/fiber';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import type { Vec3, VehicleAssetConfig } from '@/types/vehicle';
 
-export type CameraPreset = 'threeQuarter' | 'front' | 'rear' | 'side' | 'top' | 'wheel' | 'rearQuarter' | 'frontLow';
+export type CameraPreset = 'threeQuarter' | 'front' | 'rear' | 'side' | 'top' | 'wheel' | 'rearQuarter' | 'frontLow' | 'interior';
+
+/** Distance between the eye and the point it turns about in the cabin view (m). */
+export const CABIN_REACH = 0.3;
+/** Lens angle outside the car and seated inside it. */
+const FOV = { exterior: 30, cabin: 72 };
 
 /** Narrow (portrait) viewports need the camera further back to keep the whole car in frame. */
 export const framingZoom = (aspect: number) => Math.max(1, 1.1 / aspect);
@@ -15,6 +20,12 @@ export function presetPosition(preset: CameraPreset, asset: VehicleAssetConfig, 
   const d = asset.camera.distance;
   const f = asset.forward === '-z' ? -1 : 1;
   const t = asset.camera.target;
+  if (preset === 'interior' && asset.cabin) {
+    // Seated in the cabin: the camera is the eye, and it turns about a point just ahead of it.
+    const eye = new THREE.Vector3(...asset.cabin.eye);
+    const ahead = new THREE.Vector3(...asset.cabin.look).sub(eye).normalize().multiplyScalar(CABIN_REACH).add(eye);
+    return { position: asset.cabin.eye, target: ahead.toArray() as Vec3 };
+  }
   const positions: Record<CameraPreset, Vec3> = {
     threeQuarter: [d * 0.62, 1.55, f * d * 0.74],
     front: [0, 1.05, f * d * 0.95],
@@ -24,6 +35,7 @@ export function presetPosition(preset: CameraPreset, asset: VehicleAssetConfig, 
     wheel: [d * 0.62, 0.65, f * d * 0.42],
     rearQuarter: [d * 0.55, 2.1, -f * d * 0.72],
     frontLow: [d * 0.42, 0.55, f * d * 0.78],
+    interior: [d * 0.62, 1.55, f * d * 0.74],
   };
   const p = positions[preset];
   return { position: [t[0] + (p[0] - t[0]) * zoom, t[1] + (p[1] - t[1]) * zoom, t[2] + (p[2] - t[2]) * zoom], target: t };
@@ -42,7 +54,17 @@ export function CameraController({ asset, preset, nonce }: { asset: VehicleAsset
   useEffect(() => {
     const { position, target } = presetPosition(preset, asset, framingZoom(aspect));
     goal.current = { pos: new THREE.Vector3(...position), target: new THREE.Vector3(...target) };
-  }, [preset, nonce, asset, aspect]);
+    const cam = camera as THREE.PerspectiveCamera;
+    const fov = preset === 'interior' && asset.cabin ? FOV.cabin : FOV.exterior;
+    if (cam.isPerspectiveCamera && cam.fov !== fov) {
+      cam.fov = fov;
+      cam.updateProjectionMatrix();
+      // Getting in or out is a cut, not a glide through the bodywork.
+      camera.position.set(...position);
+      controls?.target.set(...target);
+      controls?.update();
+    }
+  }, [preset, nonce, asset, aspect, camera, controls]);
 
   useEffect(() => {
     if (!controls) return;

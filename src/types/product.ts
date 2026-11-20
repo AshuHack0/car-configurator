@@ -1,6 +1,6 @@
 import type { AttachmentId } from './vehicle';
 
-export type CategoryId = 'wheels' | 'spoilers' | 'bumpers' | 'skirts' | 'paint' | 'lighting' | 'accessories';
+export type CategoryId = 'wheels' | 'spoilers' | 'bumpers' | 'skirts' | 'paint' | 'lighting' | 'accessories' | 'interior';
 
 /** One product can occupy one slot; selecting another product in the slot replaces it. */
 export type SlotId =
@@ -16,7 +16,8 @@ export type SlotId =
   | 'taillights'
   | 'roof'
   | 'exhaust'
-  | 'carbonTrim';
+  | 'carbonTrim'
+  | 'interior';
 
 export interface Finish {
   id: string;
@@ -56,6 +57,8 @@ export type Implementation =
       uniform?: boolean;
     }
   | { kind: 'material'; overrides: Record<string, MaterialOverride> }
+  /** Re-trims the cabin with one of the asset's interior colour sets (VehicleAssetConfig.interior). */
+  | { kind: 'interior'; set: string }
   | { kind: 'preview'; reason: string };
 
 export type ThumbKind =
@@ -78,7 +81,8 @@ export type ThumbKind =
   | 'roof-box'
   | 'shark-fin'
   | 'exhaust'
-  | 'carbon';
+  | 'carbon'
+  | 'interior';
 
 export interface Product {
   id: string;

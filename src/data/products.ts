@@ -8,6 +8,7 @@ export const CATEGORIES: { id: CategoryId; name: string; blurb: string; slots: S
   { id: 'paint', name: 'Paint', blurb: 'Gloss, metallic & matte', slots: [] },
   { id: 'lighting', name: 'Lighting', blurb: 'Headlight & taillight tints', slots: ['headlights', 'taillights'] },
   { id: 'accessories', name: 'Accessories', blurb: 'Grille, roof, exhaust & carbon', slots: ['grille', 'mirrors', 'roof', 'exhaust', 'carbonTrim'] },
+  { id: 'interior', name: 'Interior', blurb: 'Upholstery & cabin trim', slots: ['interior'] },
 ];
 
 export const SLOT_LABELS: Record<SlotId, string> = {
@@ -24,6 +25,7 @@ export const SLOT_LABELS: Record<SlotId, string> = {
   roof: 'Roof',
   exhaust: 'Exhaust tips',
   carbonTrim: 'Carbon trim',
+  interior: 'Upholstery',
 };
 
 const RIM_FINISHES: Record<string, Finish> = {
@@ -37,6 +39,23 @@ const RIM_FINISHES: Record<string, Finish> = {
 const finishes = (...keys: (keyof typeof RIM_FINISHES)[]) => keys.map((k) => RIM_FINISHES[k]);
 
 export const PRODUCTS: Product[] = [
+  // ---- Interior ---------------------------------------------------------
+  {
+    id: 'interior-tan', slot: 'interior', category: 'interior', component: 'interior',
+    name: 'Amber Tan Leather', description: 'Tan leather seats, door panels and lower dashboard with a light headliner.',
+    price: 1_85_000, impl: { kind: 'interior', set: 'tan' }, thumb: { kind: 'interior', design: '#b98a5e' },
+  },
+  {
+    id: 'interior-brown', slot: 'interior', category: 'interior', component: 'interior',
+    name: 'Maroon Brown Leather', description: 'Deep brown leather seats, door panels and dashboard.',
+    price: 1_85_000, impl: { kind: 'interior', set: 'brown' }, thumb: { kind: 'interior', design: '#5a2f22' },
+  },
+  {
+    id: 'interior-blue', slot: 'interior', category: 'interior', component: 'interior',
+    name: 'Navy Blue Leather', description: 'Navy leather seats, door panels and centre console.',
+    price: 1_95_000, impl: { kind: 'interior', set: 'blue' }, thumb: { kind: 'interior', design: '#243652' },
+  },
+
   // ---- Wheels -----------------------------------------------------------
   {
     id: 'wheel-multi-spoke', slot: 'wheels', category: 'wheels', component: 'wheels',

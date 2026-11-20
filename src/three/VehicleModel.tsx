@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { getProduct, productFinish } from '@/data/products';
 import type { ResolvedPaint } from '@/hooks/useConfigurator';
@@ -23,6 +24,7 @@ interface Props {
   quality: RenderQuality;
   /** Called with the dimensions measured from this 3D body, once it has loaded. */
   onMeasured?: (dimensions: VehicleRig['dimensions']) => void;
+  doorsOpen?: boolean;
 }
 
 
@@ -36,7 +38,69 @@ const ATTACH_SLOTS: { slot: SlotId; replaces?: string }[] = [
   { slot: 'exhaust', replaces: 'exhaust' },
 ];
 
-export function VehicleModel({ asset, config, paint, supported, quality, onMeasured }: Props) {
+/** Swings each door about its hinge node. Left doors (+X) and right doors open in opposite directions. */
+function Doors({ scene, doors, open }: { scene: THREE.Object3D; doors: NonNullable<VehicleAssetConfig['doors']>; open: boolean }) {
+  const nodes = useMemo(
+    () => doors.flatMap(({ node, angle }) => {
+      const object = scene.getObjectByName(sanitize(node));
+      return object ? [{ object, angle: THREE.MathUtils.degToRad(angle) * (object.position.x > 0 ? -1 : 1) }] : [];
+    }),
+    [scene, doors],
+  );
+  useFrame((_, dt) => {
+    const k = 1 - Math.exp(-dt * 4);
+    for (const { object, angle } of nodes) {
+      const goal = open ? angle : 0;
+      if (Math.abs(object.rotation.y - goal) > 1e-4) object.rotation.y += (goal - object.rotation.y) * k;
+    }
+  });
+  return null;
+}
+
+/** Re-trims the cabin: swaps the colour texture of each listed interior material, keeping its grain and stitching maps. */
+function InteriorTrim({ scene, interior, set }: { scene: THREE.Object3D; interior: NonNullable<VehicleAssetConfig['interior']>; set: string | null }) {
+  useEffect(() => {
+    const files = set ? interior.sets[set] : undefined;
+    if (!files) return;
+    const loader = new THREE.TextureLoader();
+    const loaded: THREE.Texture[] = [];
+    const restore: (() => void)[] = [];
+    let cancelled = false;
+    for (const [materialName, file] of Object.entries(files)) {
+      const materials: THREE.MeshStandardMaterial[] = [];
+      scene.traverse((o) => {
+        const m = (o as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+        if (m && m.name === materialName && m.map) materials.push(m);
+      });
+      if (!materials.length) continue;
+      loader.load(`${interior.base}/${file}`, (texture) => {
+        if (cancelled) return texture.dispose();
+        const original = materials[0].map!;
+        // Match the GLB's texture conventions so the new colours land on the same UVs.
+        texture.flipY = false;
+        texture.colorSpace = THREE.SRGBColorSpace;
+        texture.wrapS = original.wrapS;
+        texture.wrapT = original.wrapT;
+        texture.anisotropy = 8;
+        loaded.push(texture);
+        for (const m of materials) {
+          const before = m.map;
+          m.map = texture;
+          m.needsUpdate = true;
+          restore.push(() => { m.map = before; m.needsUpdate = true; });
+        }
+      });
+    }
+    return () => {
+      cancelled = true;
+      restore.forEach((undo) => undo());
+      loaded.forEach((t) => t.dispose());
+    };
+  }, [scene, interior, set]);
+  return null;
+}
+
+export function VehicleModel({ asset, config, paint, supported, quality, onMeasured, doorsOpen = false }: Props) {
   const gltf = useModel(asset.modelUrl);
 
   // Each mount gets its own clone with its own materials, so the cached GLB is never mutated.
@@ -93,6 +157,7 @@ export function VehicleModel({ asset, config, paint, supported, quality, onMeasu
   }, [rig, onMeasured]);
 
   const wheels = pick('wheels');
+  const trim = pick('interior');
   const spoiler = pick('spoiler');
   const materialProducts = (Object.keys(config.selections) as SlotId[])
     .map(pick)
@@ -105,6 +170,10 @@ export function VehicleModel({ asset, config, paint, supported, quality, onMeasu
     <group scale={asset.scale}>
       <primitive object={scene} />
       <PaintCustomizer material={lib.paint} paint={paint} />
+      {asset.doors && <Doors scene={scene} doors={asset.doors} open={doorsOpen} />}
+      {asset.interior && (
+        <InteriorTrim scene={scene} interior={asset.interior} set={trim?.product.impl.kind === 'interior' ? trim.product.impl.set : null} />
+      )}
       <WheelReplacement key={modelOf(wheels) ?? 'stock'} rig={rig} lib={lib} model={modelOf(wheels)} finish={wheels?.finish} />
       <SpoilerReplacement
         key={modelOf(spoiler) ?? 'none'} rig={rig} lib={lib} model={modelOf(spoiler)}

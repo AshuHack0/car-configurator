@@ -20,6 +20,12 @@ import { SummaryDialog } from './SummaryDialog';
 import { ViewerOverlay } from './ViewerOverlay';
 import styles from './Configurator.module.css';
 
+/** Extra tile for cars whose 3D model has a cabin to sit in. */
+const CABIN_VIEW: { id: CameraPreset; label: string; icon: JSX.Element } = {
+  id: 'interior', label: 'Interior',
+  icon: <><path d="M11 20v-9a3 3 0 0 1 6 0v6h5a3 3 0 0 1 3 3v1H11Z" /><path d="M9 24h17" /></>,
+};
+
 const VehicleScene = dynamic(() => import('@/three/VehicleScene'), { ssr: false });
 
 const CATEGORY_VIEW: Record<CategoryId, CameraPreset> = {
@@ -30,6 +36,7 @@ const CATEGORY_VIEW: Record<CategoryId, CameraPreset> = {
   paint: 'threeQuarter',
   lighting: 'front',
   accessories: 'rearQuarter',
+  interior: 'interior',
 };
 
 const SLOT_VIEW: Partial<Record<SlotId, CameraPreset>> = {
@@ -74,6 +81,7 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
   const [camera, setCamera] = useState<{ preset: CameraPreset; nonce: number }>({ preset: 'threeQuarter', nonce: 0 });
   const [lighting, setLighting] = useState<StageLighting>('studio');
   const [autoRotate, setAutoRotate] = useState(false);
+  const [doorsOpen, setDoorsOpen] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
@@ -209,6 +217,7 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
               retryKey={retryKey}
               onError={(e) => setLoadError(e.message)}
               onMeasured={setMeasured}
+              doorsOpen={doorsOpen}
             />
             )}
             <ViewerOverlay
@@ -220,6 +229,8 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
               onLighting={setLighting}
               autoRotate={autoRotate}
               onAutoRotate={() => setAutoRotate((a) => !a)}
+              doorsOpen={doorsOpen}
+              onDoors={asset.doors ? () => setDoorsOpen((o) => !o) : undefined}
               onFullscreen={() => (document.fullscreenElement ? document.exitFullscreen() : stageRef.current?.requestFullscreen?.())}
               loadError={loadError}
               onRetry={() => { setLoadError(null); setRetryKey((k) => k + 1); }}
@@ -234,7 +245,7 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
           </div>
 
           <div className={styles.views} role="toolbar" aria-label="Camera views">
-            {VIEWS.map((view) => (
+            {[...VIEWS, ...(asset.cabin ? [CABIN_VIEW] : [])].map((view) => (
               <button
                 key={view.id}
                 className={camera.preset === view.id ? styles.viewOn : ''}
