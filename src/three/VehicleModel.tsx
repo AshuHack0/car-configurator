@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import { Html } from '@react-three/drei';
+import { Html, useTexture } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
 import hotspot from './Hotspot.module.css';
 import * as THREE from 'three';
@@ -255,6 +255,7 @@ export function VehicleModel({ asset, config, paint, supported, quality, onMeasu
   return (
     <group scale={asset.scale}>
       <primitive object={scene} />
+      {asset.groundShadow && <GroundShadow {...asset.groundShadow} />}
       <PaintCustomizer material={lib.paint} paint={paint} />
       {asset.doors && <Doors scene={scene} doors={asset.doors} open={openNodes} />}
       {asset.doors && onToggleNode && <Hotspots doors={asset.doors} open={openNodes} onToggle={onToggleNode} />}
@@ -284,5 +285,20 @@ export function VehicleModel({ asset, config, paint, supported, quality, onMeasu
         )
       ))}
     </group>
+  );
+}
+
+/**
+ * Baked soft shadow under the car: darkest under the sills and tyres, fading out past the body.
+ * It sits just above the ground and never writes depth, so it cannot hide the floor or the sun
+ * shadow. The image's top edge points to the back of the car (-z), which is the plane's +y.
+ */
+function GroundShadow({ url, size, centre, opacity = 1 }: NonNullable<VehicleAssetConfig['groundShadow']>) {
+  const map = useTexture(url);
+  return (
+    <mesh rotation-x={-Math.PI / 2} position={[centre[0], 0.004, centre[1]]} renderOrder={1}>
+      <planeGeometry args={size} />
+      <meshBasicMaterial map={map} transparent opacity={opacity} depthWrite={false} toneMapped={false} />
+    </mesh>
   );
 }

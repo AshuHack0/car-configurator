@@ -82,7 +82,7 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
   const [open, setOpen] = useState<Set<CategoryId>>(() => new Set<CategoryId>(['paint', 'wheels']));
   const [query, setQuery] = useState('');
   const [camera, setCamera] = useState<{ preset: CameraPreset; nonce: number }>({ preset: 'threeQuarter', nonce: 0 });
-  const [lighting, setLighting] = useState<StageLighting>('courtyard');
+  const [lighting, setLighting] = useState<StageLighting>(() => v.asset.defaultLighting ?? 'courtyard');
   const [autoRotate, setAutoRotate] = useState(false);
   /** Hinge nodes (each door, the boot, each flap) that are open. */
   const [openNodes, setOpenNodes] = useState<ReadonlySet<string>>(() => new Set());

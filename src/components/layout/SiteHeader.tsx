@@ -69,6 +69,15 @@ export function SiteHeader() {
 
   useEffect(() => setOpen(false), [pathname]);
 
+  // Let sticky elements lower on the page (the model filter bar) sit just under the bar while it shows.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.header = hidden && !open ? 'hidden' : 'shown';
+    return () => {
+      delete root.dataset.header;
+    };
+  }, [hidden, open]);
+
   return (
     <>
       <header className={`${styles.header} ${solid ? styles.solid : ''} ${hidden && !open ? styles.hidden : ''}`}>

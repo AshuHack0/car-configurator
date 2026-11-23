@@ -12,13 +12,14 @@ import type { VehicleAssetConfig } from '@/types/vehicle';
 import { CABIN_REACH, CameraController, presetPosition, type CameraPreset } from './CameraController';
 import { COURTYARD_HALF, CourtyardStage } from './CourtyardStage';
 import { LocationBackdrop } from './LocationBackdrop';
+import { PlainsStage } from './PlainsStage';
 import { ModelErrorBoundary } from './ModelErrorBoundary';
 import { VehicleModel } from './VehicleModel';
 import type { VehicleRig } from './rig';
 import type { RenderQuality } from './materials';
 
 /** `outdoor` is a photographed location; the others are the built-in studio. */
-export type StageLighting = 'courtyard' | 'outdoor' | 'studio' | 'warm' | 'cool';
+export type StageLighting = 'courtyard' | 'outdoor' | 'plains' | 'studio' | 'warm' | 'cool';
 
 interface Props {
   asset: VehicleAssetConfig;
@@ -54,6 +55,8 @@ const STAGES: Record<'studio' | 'warm' | 'cool', Stage> = {
 
 /** Turns the location so its buildings sit behind the car in the opening view. */
 const LOCATION_ROTATION = 2.66;
+/** Turns the plains so the low sun rims the car from behind in the opening view. */
+const PLAINS_ROTATION = 0;
 
 function useIsMobile() {
   const [mobile, setMobile] = useState(false);
@@ -143,9 +146,10 @@ export default function VehicleScene({
   const mobile = useIsMobile();
   const quality: RenderQuality = mobile ? 'low' : 'high';
   const courtyard = lighting === 'courtyard';
+  const plains = lighting === 'plains';
   /** Sunlit stages bring their own light, ground and shadows. */
-  const outdoor = lighting === 'outdoor' || courtyard;
-  const stage = STAGES[lighting === 'outdoor' || lighting === 'courtyard' ? 'studio' : lighting];
+  const outdoor = lighting === 'outdoor' || courtyard || plains;
+  const stage = STAGES[lighting === 'studio' || lighting === 'warm' || lighting === 'cool' ? lighting : 'studio'];
   const initial = presetPosition('threeQuarter', asset, hero ? 1.3 : 1);
 
   return (
@@ -182,6 +186,10 @@ export default function VehicleScene({
         <Suspense fallback={null}>
           <CourtyardStage shadows={!mobile} />
         </Suspense>
+      ) : plains ? (
+        <Suspense fallback={null}>
+          <PlainsStage rotation={PLAINS_ROTATION} />
+        </Suspense>
       ) : outdoor ? (
         <Suspense fallback={null}>
           <LocationBackdrop quality={quality} rotation={LOCATION_ROTATION} />
@@ -204,6 +212,8 @@ export default function VehicleScene({
         wide, faint layer for the soft ambient spread under a car lit by overhead softboxes.
       */}
       {/* Outdoors the sun casts the shadow; the studio needs soft contact shadows instead. */}
+      {/* On the plains the low sun gives no useful shadow: cars without a baked one get a soft contact shadow. */}
+      {plains && !asset.groundShadow && <ContactShadows position={[0, 0.002, 0]} opacity={0.75} scale={10} blur={2.2} far={1.2} color="#1a140e" resolution={mobile ? 256 : 512} />}
       {!outdoor && <ContactShadows position={[0, 0.002, 0]} opacity={0.7} scale={10} blur={1.6} far={0.6} color="#10141a" resolution={mobile ? 256 : 512} />}
       {!outdoor && <ContactShadows position={[0, 0.001, 0]} opacity={0.45} scale={14} blur={3.2} far={3} color="#1a1f27" resolution={mobile ? 256 : 512} />}
 

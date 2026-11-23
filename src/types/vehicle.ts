@@ -163,4 +163,12 @@ export interface VehicleAssetConfig {
    * (by material name). Materials not listed keep the texture that ships in the GLB.
    */
   interior?: { base: string; sets: Record<string, Record<string, string>> };
+  /**
+   * Soft shadow baked under the car (a black PNG whose alpha is the shadow), laid flat on the
+   * ground. `size` is its [width, length] in metres; `centre` is where its middle sits, as [x, z].
+   * The image's top edge points to the back of the car.
+   */
+  groundShadow?: { url: string; size: [number, number]; centre: [number, number]; opacity?: number };
+  /** Scene the 3D viewer opens in for this car. Omitted: the courtyard. */
+  defaultLighting?: 'courtyard' | 'outdoor' | 'plains' | 'studio' | 'warm' | 'cool';
 }

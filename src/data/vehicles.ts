@@ -183,6 +183,13 @@ export const VEHICLES: Vehicle[] = [
       { code: 'SPA', label: 'SPA (2016–present)', years: range(2016, 2025) },
     ],
   },
+  {
+    id: 'volvo-s90-v2', brand: 'volvo', model: 'S90 v2', generation: 'SPA', body: 'sedan',
+    basePrice: 6_825_000, power: '250 hp', assetId: 'volvo-s90-v2',
+    generations: [
+      { code: 'SPA', label: 'SPA (2016–present)', years: range(2016, 2025) },
+    ],
+  },
 ];
 
 /** Brands the photo identification flow accepts (pilot: Porsche and BMW). */

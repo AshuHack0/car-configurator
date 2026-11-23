@@ -12,6 +12,7 @@ import styles from './ViewerOverlay.module.css';
 const LIGHTING: { id: StageLighting; label: string }[] = [
   { id: 'courtyard', label: 'Courtyard' },
   { id: 'outdoor', label: 'Riverside' },
+  { id: 'plains', label: 'Plains' },
   { id: 'studio', label: 'Studio' },
   { id: 'warm', label: 'Warm' },
   { id: 'cool', label: 'Cool' },

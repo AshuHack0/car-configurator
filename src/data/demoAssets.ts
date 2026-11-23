@@ -366,11 +366,30 @@ const VOLVO_S90: VehicleAssetConfig = {
   },
 };
 
+/**
+ * Volvo S90, second version: the same rigged model after a material and mesh pass
+ * (assets-src/vehicles/volvo-s90-v2/volvo-s90_fix.mjs): clear refractive glass, brighter tail-light
+ * lenses, lighter meshes on non-reflective parts (1.69M -> 1.44M triangles, 12.6 -> 9.5 MB).
+ * It ships with a baked soft shadow and opens on the open-plains location it was tuned in.
+ */
+const VOLVO_S90_V2: VehicleAssetConfig = {
+  ...VOLVO_S90,
+  id: 'volvo-s90-v2',
+  label: 'Volvo S90 (v2)',
+  shortLabel: 'Volvo S90 v2',
+  modelUrl: '/models/vehicles/volvo-s90-v2.glb',
+  vehicles: ['volvo-s90-v2'],
+  // Measured from the image: its wheel spots sit 456 px apart = the 2.935 m wheelbase.
+  groundShadow: { url: '/models/vehicles/volvo-s90-v2-shadow.png', size: [3.295, 6.59], centre: [0, -0.059], opacity: 0.85 },
+  defaultLighting: 'plains',
+};
+
 export const VEHICLE_ASSETS: Record<string, VehicleAssetConfig> = {
   [STAND_IN.id]: STAND_IN,
   [BMW_M4_G82.id]: BMW_M4_G82,
   [PORSCHE_911_991.id]: PORSCHE_911_991,
   [VOLVO_S90.id]: VOLVO_S90,
+  [VOLVO_S90_V2.id]: VOLVO_S90_V2,
 };
 
 /** Every asset whose model needs a credit line (CC licences). */

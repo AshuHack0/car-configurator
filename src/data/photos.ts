@@ -132,6 +132,12 @@ export const PHOTOS: Record<string, PhotoCredit> = {
     "license": "CC BY-SA 4.0",
     "page": "https://commons.wikimedia.org/wiki/File:Lamborghini_Huracan_Evo,_GIMS_2019,_Le_Grand-Saconnex_(GIMS1010).jpg"
   },
+  "volvo-s90": {
+    "title": "2020 Volvo S90 Recharge T8 AWD Inscription.jpg",
+    "artist": "Chanokchon",
+    "license": "CC BY-SA 4.0",
+    "page": "https://commons.wikimedia.org/wiki/File:2020_Volvo_S90_Recharge_T8_AWD_Inscription.jpg"
+  },
   "hero": {
     "title": "Porsche 911 GT3 Touring, IAA 2017, Frankfurt (1Y7A2766).jpg",
     "artist": "Matti Blume",
@@ -165,4 +171,10 @@ export const PHOTOS: Record<string, PhotoCredit> = {
 };
 
 /** URL of the photo stored under `key` (a vehicle id, or a named slot such as "hero"), or null. */
-export const photoUrl = (key: string): string | null => (PHOTOS[key] ? `/photos/${key}.jpg` : null);
+export const photoUrl = (key: string): string | null => {
+  const k = SAME_PHOTO[key] ?? key;
+  return PHOTOS[k] ? `/photos/${k}.jpg` : null;
+};
+
+/** Entries that reuse another entry's photo (a second version of the same car). */
+const SAME_PHOTO: Record<string, string> = { 'volvo-s90-v2': 'volvo-s90' };
