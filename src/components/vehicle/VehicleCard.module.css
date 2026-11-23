@@ -11,7 +11,7 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: #e3e4e7;
+  background: radial-gradient(80% 90% at 50% 40%, #23252b 0%, #121317 100%);
 }
 
 .art img {

@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
+import { flushSync } from 'react-dom';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ArrowRight, Bookmark, SlidersHorizontal } from 'lucide-react';
+import { ArrowRight, Bookmark, RotateCcw } from 'lucide-react';
 import { LinkButton } from '@/components/ui/Button';
 import { formatINR } from '@/data/products';
 import { BRANDS, VEHICLES, getVehicle } from '@/data/vehicles';
 import type { BodyStyle, BrandId, Vehicle } from '@/types/vehicle';
+import { SplitWords } from '@/components/motion/split';
 import { VehicleArt, bodyLabel } from './VehicleCard';
 import styles from './VehicleSelector.module.css';
 
@@ -19,7 +21,7 @@ const BODIES: { id: BodyStyle; label: string }[] = [
 
 const toggle = <T,>(list: T[], item: T) => (list.includes(item) ? list.filter((x) => x !== item) : [...list, item]);
 
-function ModelCard({ vehicle, saved }: { vehicle: Vehicle; saved: boolean }) {
+function ModelCard({ vehicle, saved, index }: { vehicle: Vehicle; saved: boolean; index: number }) {
   const [genCode, setGenCode] = useState(vehicle.generation);
   const generation = vehicle.generations.find((g) => g.code === genCode) ?? vehicle.generations[0];
   const [year, setYear] = useState(generation.years[0]);
@@ -31,16 +33,23 @@ function ModelCard({ vehicle, saved }: { vehicle: Vehicle; saved: boolean }) {
   };
 
   return (
-    <article id={vehicle.id} className={styles.card}>
-      <VehicleArt vehicle={vehicle} />
+    <article
+      id={vehicle.id}
+      className={styles.card}
+      data-reveal
+      style={{ '--d': (index % 3) * 90, viewTransitionName: `car-${vehicle.id}` } as CSSProperties}
+    >
+      <div className={styles.artWrap}>
+        <VehicleArt vehicle={vehicle} />
+        <span className={`mono ${styles.badge}`}>{brand.name} · {generation.code}</span>
+      </div>
       <div className={styles.cardBody}>
-        <h3>{brand.name} {vehicle.model}</h3>
+        <h3>{vehicle.model}</h3>
         <p className={styles.price}>From {formatINR(vehicle.basePrice)}</p>
         <div className={styles.tags}>
           <span>{year}</span>
           <span>{bodyLabel(vehicle)}</span>
-          <span>{generation.code}</span>
-          {saved && <span className={styles.saved}><Bookmark size={12} /> Saved configuration</span>}
+          {saved && <span className={styles.saved}><Bookmark size={12} /> Saved build</span>}
         </div>
 
         <dl className={styles.specs}>
@@ -69,7 +78,7 @@ function ModelCard({ vehicle, saved }: { vehicle: Vehicle; saved: boolean }) {
         <div className={styles.actions}>
           <LinkButton
             href={`/configurator/${vehicle.id}?gen=${encodeURIComponent(generation.code)}&year=${year}`}
-            variant="primary" size="md" icon={<ArrowRight size={18} />}
+            variant="primary" size="md" icon={<ArrowRight size={18} />} className={styles.configure}
           >
             Configure
           </LinkButton>
@@ -109,6 +118,14 @@ export function VehicleSelector() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** Filter changes animate: cards glide to their new places (View Transitions, where supported). */
+  const animate = (change: () => void) => {
+    const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!doc.startViewTransition || still) return change();
+    doc.startViewTransition(() => flushSync(change));
+  };
+
   const matches = useMemo(
     () => VEHICLES.filter((v) => (!brands.length || brands.includes(v.brand)) && (!bodies.length || bodies.includes(v.body))),
     [brands, bodies],
@@ -116,66 +133,78 @@ export function VehicleSelector() {
   const groups = BRANDS.map((b) => ({ brand: b, vehicles: matches.filter((v) => v.brand === b.id) })).filter((g) => g.vehicles.length);
   const filtered = brands.length + bodies.length > 0;
   const lastSaved = savedIds.find((id) => getVehicle(id));
+  const reset = () => animate(() => { setBrands([]); setBodies([]); });
 
   return (
     <main className={styles.page}>
       <header className={styles.head}>
-        <h1>Configure your dream machine</h1>
-        <p>Choose a model, generation and year. Your car opens in the configurator.</p>
-        {lastSaved && (
-          <Link href={`/configurator/${lastSaved}`} className={styles.load}>
-            <Bookmark size={16} /> Load saved configuration
-          </Link>
-        )}
-      </header>
-
-      <div className={styles.layout}>
-        <aside className={styles.filter} aria-label="Filter models">
-          <div className={styles.filterHead}>
-            <h2><SlidersHorizontal size={18} /> Filter</h2>
-            {filtered && <button onClick={() => { setBrands([]); setBodies([]); }}>Reset filter</button>}
-          </div>
-
-          <fieldset>
-            <legend>Brand</legend>
-            {BRANDS.map((b) => (
-              <label key={b.id} className={styles.check}>
-                <input type="checkbox" checked={brands.includes(b.id)} onChange={() => setBrands((l) => toggle(l, b.id))} />
-                <span>{b.name}</span>
-                <small>{VEHICLES.filter((v) => v.brand === b.id).length}</small>
-              </label>
-            ))}
-          </fieldset>
-
-          <fieldset>
-            <legend>Body design</legend>
-            {BODIES.map((b) => (
-              <label key={b.id} className={styles.check}>
-                <input type="checkbox" checked={bodies.includes(b.id)} onChange={() => setBodies((l) => toggle(l, b.id))} />
-                <span>{b.label}</span>
-                <small>{VEHICLES.filter((v) => v.body === b.id).length}</small>
-              </label>
-            ))}
-          </fieldset>
-        </aside>
-
-        <div className={styles.results}>
-          <p className={styles.count} aria-live="polite">{matches.length} {matches.length === 1 ? 'model' : 'models'}</p>
-          {groups.map(({ brand, vehicles }) => (
-            <section key={brand.id} className={styles.group}>
-              <h2>{brand.name} <span>Model variants</span></h2>
-              <div className={styles.grid}>
-                {vehicles.map((v) => <ModelCard key={v.id} vehicle={v} saved={savedIds.includes(v.id)} />)}
-              </div>
-            </section>
-          ))}
-          {!groups.length && (
-            <div className={styles.empty}>
-              <p>No models match this filter.</p>
-              <button onClick={() => { setBrands([]); setBodies([]); }}>Reset filter</button>
-            </div>
+        <span className="mono" data-reveal>Model overview — {VEHICLES.length} models</span>
+        <h1 data-reveal="words"><SplitWords text="The garage." /></h1>
+        <div className={styles.headRow}>
+          <p data-reveal style={{ '--d': 200 } as CSSProperties}>
+            Choose a model, generation and year. It opens in the 3D configurator, ready for paint, wheels and parts.
+          </p>
+          {lastSaved && (
+            <Link href={`/configurator/${lastSaved}`} className={styles.load} data-reveal style={{ '--d': 300 } as CSSProperties}>
+              <Bookmark size={16} /> Continue your saved build
+            </Link>
           )}
         </div>
+      </header>
+
+      <div className={styles.filterBar} role="group" aria-label="Filter models">
+        <div className={styles.chips}>
+          <button className={`${styles.chip} ${!brands.length ? styles.on : ''}`} aria-pressed={!brands.length} onClick={() => animate(() => setBrands([]))}>
+            All brands
+          </button>
+          {BRANDS.map((b) => (
+            <button
+              key={b.id}
+              className={`${styles.chip} ${brands.includes(b.id) ? styles.on : ''}`}
+              aria-pressed={brands.includes(b.id)}
+              onClick={() => animate(() => setBrands((l) => toggle(l, b.id)))}
+            >
+              {b.name}
+              <small>{VEHICLES.filter((v) => v.brand === b.id).length}</small>
+            </button>
+          ))}
+          <i className={styles.divider} aria-hidden />
+          {BODIES.map((b) => (
+            <button
+              key={b.id}
+              className={`${styles.chip} ${bodies.includes(b.id) ? styles.on : ''}`}
+              aria-pressed={bodies.includes(b.id)}
+              onClick={() => animate(() => setBodies((l) => toggle(l, b.id)))}
+            >
+              {b.label}
+              <small>{VEHICLES.filter((v) => v.body === b.id).length}</small>
+            </button>
+          ))}
+        </div>
+        <div className={styles.barEnd}>
+          <p className="mono" aria-live="polite">{matches.length} {matches.length === 1 ? 'model' : 'models'}</p>
+          {filtered && <button className={styles.reset} onClick={reset}><RotateCcw size={14} /> Reset</button>}
+        </div>
+      </div>
+
+      <div className={styles.results}>
+        {groups.map(({ brand, vehicles }) => (
+          <section key={brand.id} className={styles.group} style={{ viewTransitionName: `brand-${brand.id}` } as CSSProperties}>
+            <h2 data-reveal>
+              {brand.name}
+              <span className="mono">{String(vehicles.length).padStart(2, '0')} {vehicles.length === 1 ? 'model' : 'models'}</span>
+            </h2>
+            <div className={styles.grid}>
+              {vehicles.map((v, i) => <ModelCard key={v.id} vehicle={v} saved={savedIds.includes(v.id)} index={i} />)}
+            </div>
+          </section>
+        ))}
+        {!groups.length && (
+          <div className={styles.empty}>
+            <p>No models match this filter.</p>
+            <button onClick={reset}>Reset filter</button>
+          </div>
+        )}
       </div>
     </main>
   );

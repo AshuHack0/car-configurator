@@ -1,7 +1,8 @@
 .thumb {
   flex-shrink: 0;
   border-radius: var(--radius);
-  background: radial-gradient(circle at 50% 35%, #ffffff 0%, #e7eaef 80%);
+  /* A small lit studio card: parts are drawn dark, so they sit on a light backdrop. */
+  background: radial-gradient(circle at 50% 30%, #eceef1 0%, #b9bdc4 100%);
   border: 1px solid var(--border);
   display: grid;
   place-items: center;

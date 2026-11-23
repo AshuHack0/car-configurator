@@ -187,10 +187,9 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
 
   return (
     <div className={styles.page}>
-      <header className={styles.brandBar}><Logo /></header>
-
       <div className={styles.actionBar}>
         <nav className={styles.links}>
+          <span className={styles.logo}><Logo /></span>
           <Link href="/vehicles"><ArrowLeft size={18} /> <span>Change model</span></Link>
           <button onClick={() => setToast(cfg.save() ? 'Configuration saved on this device' : 'Could not save — storage unavailable')}>
             <Bookmark size={18} /> <span>Save configuration</span>
@@ -208,7 +207,7 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
         </nav>
         <div className={styles.cta}>
           <div className={styles.price}>
-            <strong>{formatINR(cfg.total)}</strong>
+            <strong key={cfg.total}>{formatINR(cfg.total)}</strong>
             <small>Estimated customisation · demo prices</small>
           </div>
           <button className={styles.summary} onClick={() => setSummaryOpen(true)}>Summary</button>
@@ -280,6 +279,7 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
         </div>
 
         <aside className={styles.right}>
+          <p className={`mono ${styles.brandLine}`}>{v.brand.name}</p>
           <div className={styles.title}>
             <h1>{v.vehicle.model}</h1>
             <span className={styles.pill}>{year ?? generation}</span>

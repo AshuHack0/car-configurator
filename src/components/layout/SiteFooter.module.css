@@ -1,64 +1,124 @@
 .footer {
-  margin-top: clamp(64px, 8vw, 120px);
-  padding: clamp(40px, 5vw, 72px) var(--gutter) 40px;
-  background: var(--card);
+  position: relative;
+  margin-top: clamp(80px, 10vw, 160px);
+  padding: clamp(64px, 8vw, 120px) var(--gutter) 32px;
+  border-top: 1px solid var(--line);
+  background:
+    radial-gradient(80% 60% at 50% 120%, rgba(255, 90, 31, 0.16), transparent 70%),
+    var(--bg);
+  overflow: hidden;
+}
+
+.top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 32px;
+  flex-wrap: wrap;
+  padding-bottom: clamp(48px, 6vw, 88px);
+  border-bottom: 1px solid var(--line);
+}
+
+.pitch {
+  font-size: clamp(30px, 4.4vw, 64px);
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  line-height: 1.02;
+}
+
+.pitch span {
+  color: var(--faint);
+}
+
+.big {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  height: 64px;
+  padding: 0 28px;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 17px;
+  font-weight: 600;
+  transition: box-shadow 0.5s var(--ease), gap 0.5s var(--ease-out);
+}
+
+.big:hover {
+  gap: 18px;
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.1), 0 20px 60px var(--signal-glow);
 }
 
 .columns {
   display: grid;
-  grid-template-columns: repeat(3, 1fr) 1.4fr;
-  gap: 32px;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.4fr);
+  gap: 40px;
+  padding: clamp(40px, 5vw, 72px) 0;
 }
 
 .columns h4 {
-  font-size: 16px;
-  font-weight: 600;
+  color: var(--faint);
+  font-weight: 500;
+  margin-bottom: 18px;
 }
 
 .columns ul {
-  margin-top: 12px;
   list-style: none;
+  display: grid;
+  gap: 10px;
 }
 
-.columns li a {
-  display: inline-block;
-  padding: 6px 0;
-  font-size: 16px;
+.columns a {
   color: var(--muted);
-  transition: color 0.24s var(--ease);
+  font-size: 15px;
+  transition: color 0.3s var(--ease);
 }
 
-.columns li a:hover {
+.columns a:hover {
   color: var(--text);
-  text-decoration: underline;
 }
 
 .columns p {
-  margin-top: 16px;
-  font-size: 14px;
-  line-height: 1.6;
   color: var(--muted);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+/* Edge-to-edge wordmark, fading into the floor. */
+.wordmark {
+  font-size: 21.5vw;
+  font-weight: 700;
+  letter-spacing: -0.06em;
+  line-height: 0.8;
+  text-align: center;
+  margin: 0 calc(var(--gutter) * -1);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  user-select: none;
 }
 
 .legal {
-  margin-top: 48px;
-  padding-top: 24px;
-  border-top: 1px solid var(--border-strong);
   display: flex;
-  gap: 32px;
-  align-items: center;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 32px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
 }
 
 .legal p {
-  max-width: 720px;
+  max-width: 760px;
   font-size: 12px;
   line-height: 1.6;
   color: var(--faint);
+  text-align: right;
 }
 
 .legal p a {
   text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 @media (max-width: 900px) {
@@ -67,6 +127,8 @@
   }
   .legal {
     flex-direction: column;
-    align-items: flex-start;
+  }
+  .legal p {
+    text-align: left;
   }
 }

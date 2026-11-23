@@ -1,0 +1,11 @@
+/* Scroll progress: a hairline of signal colour across the very top of the page. */
+.progress {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 60;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--signal) 30%, #ffb38a);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  pointer-events: none;
+}

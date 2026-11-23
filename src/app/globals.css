@@ -1,30 +1,54 @@
-/* Design tokens + minimal reset only. Component styles live in CSS Modules. */
+/*
+ * Design tokens, reset, and the shared motion system. Component styles live in CSS Modules.
+ *
+ * Look: a dark "digital garage". Graphite surfaces, white type, one ignition-orange signal
+ * colour used sparingly (live dots, progress, focus of attention).
+ */
 :root {
-  /* Monochrome showroom palette: white page, near-black ink, grey surfaces. */
-  --bg: #ffffff;
-  --bg-raised: #ffffff;
-  --card: #eeeff2;
-  --card-hover: #e3e4e7;
-  --card-active: #e3e4e7;
-  --border: rgba(1, 2, 5, 0.1);
-  --border-strong: rgba(1, 2, 5, 0.3);
-  --glass: rgba(255, 255, 255, 0.92);
-  --accent: #010205;
-  --accent-soft: rgba(1, 2, 5, 0.06);
-  --accent-glow: rgba(1, 2, 5, 0.18);
-  --text: #010205;
-  --muted: #535457;
-  --faint: #6b6d70;
-  --success: #197e10;
-  --warning: #b45309;
+  color-scheme: dark;
 
-  --radius-sm: 4px;
-  --radius: 8px;
-  --radius-lg: 12px;
+  /* Surfaces, darkest to lightest. */
+  --bg: #07080a;
+  --bg-raised: #0d0e11;
+  --card: #121317;
+  --card-hover: #181a1f;
+  --card-active: #1f2128;
+  --line: rgba(255, 255, 255, 0.07);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(255, 255, 255, 0.24);
+  --glass: rgba(10, 11, 14, 0.72);
+
+  /* Ink. `--accent` is the primary ink (white) used for selected states and primary buttons. */
+  --accent: #f5f5f4;
+  --accent-soft: rgba(255, 255, 255, 0.06);
+  --accent-glow: rgba(255, 255, 255, 0.16);
+  --text: #f5f5f4;
+  --muted: #a3a3a8;
+  --faint: #6f7076;
+
+  /* Signal colour: live states, progress, the one thing on screen that should catch the eye. */
+  --signal: #ff5a1f;
+  --signal-soft: rgba(255, 90, 31, 0.14);
+  --signal-glow: rgba(255, 90, 31, 0.45);
+
+  --success: #4ade80;
+  --warning: #fbbf24;
+
+  --radius-sm: 6px;
+  --radius: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
   --header-h: 72px;
   --gutter: clamp(16px, 5vw, 96px);
+  --max: 1520px;
+
   --ease: cubic-bezier(0.25, 0.1, 0.25, 1);
-  --shadow: 0 8px 40px rgba(1, 2, 5, 0.12);
+  /* Long, decelerating curve used by every reveal: fast start, very soft landing. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.76, 0, 0.24, 1);
+  --shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+
+  --font-display: var(--font-sans);
 }
 
 *,
@@ -43,6 +67,27 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow-x: clip;
+  text-rendering: optimizeLegibility;
+}
+
+/* Film grain over everything: breaks up flat digital gradients so dark areas read as photographed. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: -50%;
+  z-index: 9999;
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  animation: grain 1.2s steps(6) infinite;
+}
+
+@keyframes grain {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-3%, 2%); }
+  40% { transform: translate(2%, -3%); }
+  60% { transform: translate(-2%, -1%); }
+  80% { transform: translate(3%, 3%); }
 }
 
 a {
@@ -59,28 +104,154 @@ button {
 }
 
 input,
-select {
+select,
+textarea {
   font: inherit;
   color: inherit;
 }
 
+select option {
+  background: var(--card);
+  color: var(--text);
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
 ::selection {
-  background: var(--accent-glow);
+  background: var(--signal);
+  color: #fff;
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
+  outline: 2px solid var(--signal);
+  outline-offset: 3px;
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.16);
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
+}
+
+/* ---- Smooth scrolling (Lenis) ------------------------------------------- */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+/* ---- Reveal system ------------------------------------------------------
+ * Any element with data-reveal starts hidden and animates in when it scrolls into view
+ * (src/components/motion/MotionRoot.tsx adds data-shown). Only applies once JS has run
+ * (html.js), so content is never hidden without it. Stagger with style="--d: 120" (ms).
+ */
+.js [data-reveal] {
+  opacity: 0;
+  transform: translate3d(0, 32px, 0);
+  transition:
+    opacity 1s var(--ease-out),
+    transform 1.2s var(--ease-out),
+    clip-path 1.4s var(--ease-out),
+    filter 1s var(--ease-out);
+  transition-delay: calc(var(--d, 0) * 1ms);
+}
+.js [data-reveal='fade'] {
+  transform: none;
+}
+.js [data-reveal='blur'] {
+  filter: blur(14px);
+  transform: scale(1.03);
+}
+/* Images wipe open from a smaller rounded window. */
+.js [data-reveal='clip'] {
+  opacity: 1;
+  transform: none;
+  clip-path: inset(14% 10% 14% 10% round 28px);
+}
+/* Headlines: each word rises out of its own mask (see splitWords). */
+.js [data-reveal='words'] {
+  opacity: 1;
+  transform: none;
+}
+.js [data-reveal='words'] .w > span {
+  display: inline-block;
+  transform: translate3d(0, 110%, 0) rotate(4deg);
+  transform-origin: 0 100%;
+  transition: transform 1.1s var(--ease-out);
+  transition-delay: calc(var(--d, 0) * 1ms + var(--i, 0) * 55ms);
+}
+.js [data-reveal][data-shown] {
+  opacity: 1;
+  transform: none;
+  filter: none;
+  clip-path: inset(0 0 0 0 round 0);
+}
+.js [data-reveal='words'][data-shown] .w > span {
+  transform: none;
+}
+.w {
+  display: inline-block;
+  overflow: clip;
+  overflow-clip-margin: 0.12em;
+  vertical-align: top;
+  padding-bottom: 0.06em;
+  margin-bottom: -0.06em;
+}
+
+/* View transitions (model filters): elements glide between positions instead of jumping. */
+::view-transition-group(*) {
+  animation-duration: 0.6s;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* No scrolling while the home-page intro plays. */
+html[data-intro] body {
+  overflow: hidden;
+}
+
+/* ---- Shared type helpers ----------------------------------------------- */
+/* Technical label: monospaced, uppercase, tracked. Used for eyebrows, specs and indexes. */
+.mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+  .js [data-reveal],
+  .js [data-reveal] .w > span {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    clip-path: none !important;
+  }
+  body::after {
+    animation: none;
+  }
 }

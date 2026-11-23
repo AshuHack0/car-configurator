@@ -1,0 +1,227 @@
+.showroom {
+  position: relative;
+}
+
+.sticky {
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  padding: 8px 0 24px;
+}
+
+.sticky::-webkit-scrollbar {
+  display: none;
+}
+
+.pinned .sticky {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0;
+}
+
+.track {
+  display: flex;
+  gap: clamp(16px, 2vw, 28px);
+  padding: 0 var(--gutter);
+  width: max-content;
+  will-change: transform;
+}
+
+.card,
+.more {
+  position: relative;
+  flex: none;
+  width: min(84vw, 1040px);
+  aspect-ratio: 16 / 10;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  scroll-snap-align: center;
+  background: var(--card);
+  border: 1px solid var(--line);
+}
+
+.pinned .card,
+.pinned .more {
+  width: min(64vw, 1040px);
+  max-height: 72svh;
+}
+
+.photo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Each photo drifts against the row's motion: a cheap, convincing depth cue. */
+.photo img {
+  width: 116%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 58%;
+  transform: translate3d(calc((var(--p, 0) * 100% - var(--k) * 14%) * -0.12), 0, 0) scale(1.02);
+  transition: scale 1.2s var(--ease-out), filter 1.2s var(--ease-out);
+  filter: saturate(0.92) contrast(1.05);
+}
+
+.card:hover .photo img {
+  scale: 1.05;
+  filter: saturate(1.05) contrast(1.08);
+}
+
+.shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(7, 8, 10, 0.55) 0%, transparent 28%, transparent 40%, rgba(7, 8, 10, 0.96) 100%);
+  pointer-events: none;
+}
+
+.index {
+  position: absolute;
+  inset: 24px 28px auto;
+  display: flex;
+  justify-content: space-between;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.info {
+  position: absolute;
+  inset: auto 28px 26px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 6px 24px;
+}
+
+.info > p {
+  grid-column: 1 / -1;
+  color: var(--signal);
+  margin-bottom: 8px;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
+}
+
+.info h3 {
+  font-size: clamp(36px, 5vw, 84px);
+  font-weight: 600;
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+}
+
+.info dl {
+  grid-column: 1;
+  display: flex;
+  gap: 28px;
+  margin-top: 14px;
+}
+
+.info dt {
+  font-size: 10px;
+  color: var(--faint);
+  margin-bottom: 4px;
+}
+
+.info dd {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.go {
+  grid-column: 2;
+  grid-row: 2 / span 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 48px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-size: 15px;
+  font-weight: 500;
+  transition: background 0.4s var(--ease), color 0.4s var(--ease);
+}
+
+.card:hover .go,
+.more:hover .go {
+  background: var(--text);
+  color: var(--bg);
+}
+
+.more {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 8px;
+  padding: clamp(28px, 4vw, 64px);
+  width: min(70vw, 560px);
+  background:
+    radial-gradient(70% 80% at 80% 20%, rgba(255, 90, 31, 0.22), transparent 70%),
+    var(--card);
+}
+
+.pinned .more {
+  width: min(36vw, 560px);
+}
+
+.more strong {
+  font-size: clamp(96px, 12vw, 200px);
+  font-weight: 600;
+  letter-spacing: -0.06em;
+  line-height: 0.85;
+}
+
+.more > span:nth-child(3) {
+  color: var(--muted);
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+.more .go {
+  grid-column: auto;
+}
+
+.more > :global(.mono) {
+  color: var(--signal);
+}
+
+.progress {
+  display: none;
+}
+
+.pinned .progress {
+  display: block;
+  margin: 36px var(--gutter) 0;
+  height: 1px;
+  background: var(--line);
+}
+
+.progress i {
+  display: block;
+  height: 100%;
+  background: var(--text);
+  transform: scaleX(var(--p, 0));
+  transform-origin: 0 50%;
+}
+
+@media (max-width: 640px) {
+  .info dl {
+    gap: 16px;
+  }
+  .info {
+    grid-template-columns: 1fr;
+  }
+  .go {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+    margin-top: 12px;
+  }
+}

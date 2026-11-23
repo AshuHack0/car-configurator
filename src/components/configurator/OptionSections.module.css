@@ -5,10 +5,15 @@
 }
 
 .card {
-  background: #fff;
+  background: var(--cfg-panel);
+  border: 1px solid var(--line);
   border-radius: 20px;
-  box-shadow: 0 2px 14px rgba(1, 2, 5, 0.1);
   overflow: hidden;
+  transition: border-color 0.4s var(--ease);
+}
+
+.card:has([aria-expanded='true']) {
+  border-color: var(--cfg-line);
 }
 
 .head {
@@ -36,7 +41,7 @@
   place-items: center;
   font-size: 12px;
   font-weight: 600;
-  background: var(--cfg-ink);
+  background: var(--signal);
   color: #fff;
 }
 
@@ -50,7 +55,7 @@
 
 .body {
   padding: 0 20px 22px;
-  animation: reveal 0.3s var(--ease) both;
+  animation: reveal 0.5s var(--ease-out) both;
 }
 
 .group + .group {
@@ -103,7 +108,11 @@
   border-radius: 14px;
   border: 2px solid transparent;
   cursor: pointer;
-  transition: border-color 0.2s;
+  transition: border-color 0.25s var(--ease), transform 0.4s var(--ease-out), box-shadow 0.4s var(--ease);
+}
+
+.tile:hover {
+  transform: translateY(-2px);
 }
 
 .tile:hover {
@@ -113,6 +122,7 @@
 .selected,
 .selected:hover {
   border-color: var(--cfg-ink);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.06), 0 10px 30px rgba(0, 0, 0, 0.45);
 }
 
 .tile > div,
@@ -163,9 +173,9 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: #fff;
+  background: var(--bg);
   color: var(--warning);
-  box-shadow: 0 1px 4px rgba(1, 2, 5, 0.2);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
 .custom {
@@ -207,7 +217,7 @@
 .chipOn {
   border-color: var(--cfg-ink);
   background: var(--cfg-ink);
-  color: #fff !important;
+  color: var(--cfg-ink-inverse) !important;
 }
 
 .finishes {
@@ -226,7 +236,7 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  border: 3px solid #fff;
+  border: 3px solid var(--cfg-panel);
   box-shadow: 0 0 0 1px var(--cfg-line);
   transition: box-shadow 0.2s;
 }
@@ -238,7 +248,8 @@
 @keyframes reveal {
   from {
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translateY(-10px);
+    filter: blur(4px);
   }
 }
 
