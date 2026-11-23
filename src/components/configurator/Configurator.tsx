@@ -15,10 +15,13 @@ import type { CameraPreset } from '@/three/CameraController';
 import type { StageLighting } from '@/three/VehicleScene';
 import type { VehicleRig } from '@/three/rig';
 import type { CategoryId, Product, SlotId } from '@/types/product';
+import type { OpeningPart } from '@/types/vehicle';
 import { OptionSections } from './OptionSections';
 import { SummaryDialog } from './SummaryDialog';
 import { ViewerOverlay } from './ViewerOverlay';
 import styles from './Configurator.module.css';
+
+const OPENING_PARTS: OpeningPart[] = ['doors', 'boot', 'fuel'];
 
 /** Extra tile for cars whose 3D model has a cabin to sit in. */
 const CABIN_VIEW: { id: CameraPreset; label: string; icon: JSX.Element } = {
@@ -79,9 +82,15 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
   const [open, setOpen] = useState<Set<CategoryId>>(() => new Set<CategoryId>(['paint', 'wheels']));
   const [query, setQuery] = useState('');
   const [camera, setCamera] = useState<{ preset: CameraPreset; nonce: number }>({ preset: 'threeQuarter', nonce: 0 });
-  const [lighting, setLighting] = useState<StageLighting>('studio');
+  const [lighting, setLighting] = useState<StageLighting>('courtyard');
   const [autoRotate, setAutoRotate] = useState(false);
-  const [doorsOpen, setDoorsOpen] = useState(false);
+  /** Hinge nodes (each door, the boot, each flap) that are open. */
+  const [openNodes, setOpenNodes] = useState<ReadonlySet<string>>(() => new Set());
+  const toggleNode = useCallback((node: string) => setOpenNodes((prev) => {
+    const next = new Set(prev);
+    if (!next.delete(node)) next.add(node);
+    return next;
+  }), []);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
@@ -142,6 +151,15 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
   };
 
   const { asset } = v;
+  /** Toolbar buttons act on every hinge of a kind: all doors, the boot, both flaps. */
+  const nodesOf = (part: OpeningPart) => (asset.doors ?? []).filter((d) => d.part === part).map((d) => d.node);
+  const togglePart = (part: OpeningPart) => setOpenNodes((prev) => {
+    const nodes = nodesOf(part);
+    const next = new Set(prev);
+    const allOpen = nodes.every((n) => next.has(n));
+    nodes.forEach((n) => (allOpen ? next.delete(n) : next.add(n)));
+    return next;
+  });
 
   // Photo view: offline renders exist for the standard car in each listed paint. Anything
   // they cannot show (parts, wheels, a custom colour) falls back to the live 3D viewer.
@@ -217,7 +235,8 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
               retryKey={retryKey}
               onError={(e) => setLoadError(e.message)}
               onMeasured={setMeasured}
-              doorsOpen={doorsOpen}
+              openNodes={openNodes}
+              onToggleNode={toggleNode}
             />
             )}
             <ViewerOverlay
@@ -229,8 +248,9 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
               onLighting={setLighting}
               autoRotate={autoRotate}
               onAutoRotate={() => setAutoRotate((a) => !a)}
-              doorsOpen={doorsOpen}
-              onDoors={asset.doors ? () => setDoorsOpen((o) => !o) : undefined}
+              openable={OPENING_PARTS.filter((p) => asset.doors?.some((d) => d.part === p))}
+              openParts={new Set(OPENING_PARTS.filter((p) => nodesOf(p).length > 0 && nodesOf(p).every((n) => openNodes.has(n))))}
+              onTogglePart={togglePart}
               onFullscreen={() => (document.fullscreenElement ? document.exitFullscreen() : stageRef.current?.requestFullscreen?.())}
               loadError={loadError}
               onRetry={() => { setLoadError(null); setRetryKey((k) => k + 1); }}
@@ -294,6 +314,7 @@ export function Configurator({ vehicleId, generation, year, ownPaint }: Props) {
             config={cfg.config}
             paint={cfg.paint}
             ownPaint={ownPaint}
+            factoryColor={asset.vehicles?.includes(vehicleId) ? asset.factoryPaint?.color : undefined}
             query={query}
             open={open}
             onToggle={toggleSection}

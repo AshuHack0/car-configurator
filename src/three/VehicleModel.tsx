@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+import { Html } from '@react-three/drei';
 import { useFrame } from '@react-three/fiber';
+import hotspot from './Hotspot.module.css';
 import * as THREE from 'three';
 import { getProduct, productFinish } from '@/data/products';
 import type { ResolvedPaint } from '@/hooks/useConfigurator';
@@ -24,7 +26,10 @@ interface Props {
   quality: RenderQuality;
   /** Called with the dimensions measured from this 3D body, once it has loaded. */
   onMeasured?: (dimensions: VehicleRig['dimensions']) => void;
-  doorsOpen?: boolean;
+  /** Hinge nodes (doors, boot, fuel flaps) that are open. */
+  openNodes?: ReadonlySet<string>;
+  /** Given when the dots on the car should be shown; called with the node to open or close. */
+  onToggleNode?: (node: string) => void;
 }
 
 
@@ -38,23 +43,70 @@ const ATTACH_SLOTS: { slot: SlotId; replaces?: string }[] = [
   { slot: 'exhaust', replaces: 'exhaust' },
 ];
 
-/** Swings each door about its hinge node. Left doors (+X) and right doors open in opposite directions. */
-function Doors({ scene, doors, open }: { scene: THREE.Object3D; doors: NonNullable<VehicleAssetConfig['doors']>; open: boolean }) {
+/**
+ * Swings each opening panel about its hinge node. Doors and flaps turn about a vertical axis
+ * (left side, +X, and right side open in opposite directions); lids lift about the car's width.
+ */
+function Doors({ scene, doors, open }: { scene: THREE.Object3D; doors: NonNullable<VehicleAssetConfig['doors']>; open?: ReadonlySet<string> }) {
   const nodes = useMemo(
-    () => doors.flatMap(({ node, angle }) => {
+    () => doors.flatMap(({ node, angle, axis = 'y' }) => {
       const object = scene.getObjectByName(sanitize(node));
-      return object ? [{ object, angle: THREE.MathUtils.degToRad(angle) * (object.position.x > 0 ? -1 : 1) }] : [];
+      if (!object) return [];
+      const side = axis === 'y' && object.position.x > 0 ? -1 : 1;
+      return [{ object, node, axis, angle: THREE.MathUtils.degToRad(angle) * side }];
     }),
     [scene, doors],
   );
   useFrame((_, dt) => {
     const k = 1 - Math.exp(-dt * 4);
-    for (const { object, angle } of nodes) {
-      const goal = open ? angle : 0;
-      if (Math.abs(object.rotation.y - goal) > 1e-4) object.rotation.y += (goal - object.rotation.y) * k;
+    for (const { object, node, axis, angle } of nodes) {
+      const goal = open?.has(node) ? angle : 0;
+      if (Math.abs(object.rotation[axis] - goal) > 1e-4) object.rotation[axis] += (goal - object.rotation[axis]) * k;
     }
   });
   return null;
+}
+
+/**
+ * A dot on each panel that can open; clicking it opens or closes that panel. Dots on the far
+ * side of the car are hidden, so only the ones you could actually reach are shown.
+ */
+function Hotspots({ doors, open, onToggle }: { doors: NonNullable<VehicleAssetConfig['doors']>; open?: ReadonlySet<string>; onToggle: (node: string) => void }) {
+  const spots = useMemo(() => doors.filter((d) => d.hotspot), [doors]);
+  const dots = useRef<(HTMLButtonElement | null)[]>([]);
+  const toCamera = useMemo(() => new THREE.Vector3(), []);
+  const normal = useMemo(() => new THREE.Vector3(), []);
+  useFrame(({ camera }) => {
+    spots.forEach((d, i) => {
+      const el = dots.current[i];
+      if (!el || !d.hotspot) return;
+      toCamera.copy(camera.position).sub(normal.set(...d.hotspot.at)).normalize();
+      const facing = toCamera.dot(normal.set(...d.hotspot.normal).normalize());
+      el.style.opacity = facing > 0.12 ? '1' : '0';
+      el.style.pointerEvents = facing > 0.12 ? 'auto' : 'none';
+    });
+  });
+  return (
+    <>
+      {spots.map((d, i) => {
+        const isOpen = !!open?.has(d.node);
+        return (
+          <Html key={d.node} position={d.hotspot!.at} center zIndexRange={[5, 0]}>
+            <button
+              ref={(el) => { dots.current[i] = el; }}
+              className={`${hotspot.dot} ${isOpen ? hotspot.open : ''}`}
+              onClick={() => onToggle(d.node)}
+              aria-pressed={isOpen}
+              aria-label={`${isOpen ? 'Close' : 'Open'} ${d.hotspot!.label}`}
+              title={`${isOpen ? 'Close' : 'Open'} ${d.hotspot!.label}`}
+            >
+              <i />
+            </button>
+          </Html>
+        );
+      })}
+    </>
+  );
 }
 
 /** Re-trims the cabin: swaps the colour texture of each listed interior material, keeping its grain and stitching maps. */
@@ -100,7 +152,7 @@ function InteriorTrim({ scene, interior, set }: { scene: THREE.Object3D; interio
   return null;
 }
 
-export function VehicleModel({ asset, config, paint, supported, quality, onMeasured, doorsOpen = false }: Props) {
+export function VehicleModel({ asset, config, paint, supported, quality, onMeasured, openNodes, onToggleNode }: Props) {
   const gltf = useModel(asset.modelUrl);
 
   // Each mount gets its own clone with its own materials, so the cached GLB is never mutated.
@@ -141,11 +193,37 @@ export function VehicleModel({ asset, config, paint, supported, quality, onMeasu
         if (preset.kind === 'glass' || preset.kind === 'lens') mesh.castShadow = false;
       } else {
         const m = source.clone();
+        const tweak = asset.materialTweaks?.[source.name];
+        if (tweak) {
+          const tuned = m as THREE.MeshStandardMaterial;
+          if (tweak.tint || tweak.brightness) tuned.color.set(tweak.tint ?? '#ffffff').multiplyScalar(tweak.brightness ?? 1);
+          if (tweak.roughness !== undefined) {
+            tuned.roughness = tweak.roughness;
+            tuned.roughnessMap = null;
+          }
+        }
         owned.push(m);
         mesh.material = m;
       }
     });
-    return { scene, rig: buildRig(scene, asset), lib, owned };
+    const rig = buildRig(scene, asset);
+    // Pose: turn the front wheels (and the brakes behind them) about each wheel's own centre.
+    // Done after measuring, so every fitted part is still placed from the straight-ahead car.
+    if (asset.steer) {
+      const angle = THREE.MathUtils.degToRad(asset.steer);
+      const nose = asset.forward === '+z' ? 1 : -1;
+      const turn = new THREE.Matrix4().makeRotationY(angle);
+      for (const wheel of rig.wheels) {
+        if (wheel.placement.position[2] * nose <= 0) continue;
+        const node = scene.getObjectByName(sanitize(wheel.node));
+        if (!node) continue;
+        const centre = new THREE.Vector3(...wheel.placement.position);
+        node.rotation.y = angle;
+        node.position.copy(centre).sub(centre.clone().applyMatrix4(turn));
+        wheel.placement = { ...wheel.placement, rotation: [wheel.placement.rotation[0], wheel.placement.rotation[1] + angle, wheel.placement.rotation[2]] };
+      }
+    }
+    return { scene, rig, lib, owned };
   }, [gltf.scene, asset, quality]);
 
   useEffect(() => () => {
@@ -178,7 +256,8 @@ export function VehicleModel({ asset, config, paint, supported, quality, onMeasu
     <group scale={asset.scale}>
       <primitive object={scene} />
       <PaintCustomizer material={lib.paint} paint={paint} />
-      {asset.doors && <Doors scene={scene} doors={asset.doors} open={doorsOpen} />}
+      {asset.doors && <Doors scene={scene} doors={asset.doors} open={openNodes} />}
+      {asset.doors && onToggleNode && <Hotspots doors={asset.doors} open={openNodes} onToggle={onToggleNode} />}
       {asset.interior && (
         <InteriorTrim scene={scene} interior={asset.interior} set={trim?.product.impl.kind === 'interior' ? trim.product.impl.set : null} />
       )}

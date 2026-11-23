@@ -27,7 +27,8 @@ export function presetPosition(preset: CameraPreset, asset: VehicleAssetConfig, 
     return { position: asset.cabin.eye, target: ahead.toArray() as Vec3 };
   }
   const positions: Record<CameraPreset, Vec3> = {
-    threeQuarter: [d * 0.62, 1.55, f * d * 0.74],
+    // Opening view: a close, low diagonal on the front corner, with the turned front wheel in frame.
+    threeQuarter: [d * 0.5, 1.12, f * d * 0.55],
     front: [0, 1.05, f * d * 0.95],
     rear: [0, 1.25, -f * d * 0.95],
     side: [d * 0.98, 0.95, 0],

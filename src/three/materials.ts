@@ -57,7 +57,7 @@ export interface MaterialLibrary {
  */
 function createCarPaint() {
   return new THREE.MeshPhysicalMaterial({
-    name: 'Runtime_Paint', clearcoat: 1, clearcoatRoughness: 0.03, specularIntensity: 1,
+    name: 'Runtime_Paint', clearcoat: 1, clearcoatRoughness: 0.03, specularIntensity: 1, envMapIntensity: 0.7,
   });
 }
 
@@ -81,10 +81,12 @@ export function createMaterialLibrary(): MaterialLibrary {
 }
 
 export function applyPaint(material: THREE.MeshPhysicalMaterial, paint: ResolvedPaint) {
-  material.metalness = paint.metalness;
-  material.roughness = paint.roughness;
-  material.clearcoat = paint.clearcoat;
-  material.clearcoatRoughness = paint.clearcoatRoughness;
+  // Kept deliberately mild: the body shows its own colour first, with only a faint, softened
+  // mirror of the surroundings in the lacquer.
+  material.metalness = paint.metalness * 0.5;
+  material.roughness = Math.max(paint.roughness, 0.34);
+  material.clearcoat = paint.clearcoat * 0.65;
+  material.clearcoatRoughness = Math.max(paint.clearcoatRoughness, 0.1);
 }
 
 /**
@@ -104,7 +106,7 @@ export function createSurfaceMaterial(
   switch (preset.kind) {
     case 'glass':
       if (quality === 'high') {
-        Object.assign(m, { roughness: r ?? 0, transmission: 1, thickness: 0.01, ior: 1.52 });
+        Object.assign(m, { roughness: r ?? 0, transmission: 1, thickness: 0.01, ior: 1.52, envMapIntensity: 0.3 });
       } else {
         Object.assign(m, { roughness: r ?? 0, transparent: true, opacity: 0.35, depthWrite: false });
         m.color.set('#20262c');

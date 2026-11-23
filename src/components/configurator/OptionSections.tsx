@@ -34,6 +34,8 @@ interface Props {
   config: Configuration;
   paint: ResolvedPaint;
   ownPaint?: OwnPaint;
+  /** This car's own factory colour, when it has one (shown on the Factory Finish swatch). */
+  factoryColor?: string;
   query: string;
   open: Set<CategoryId>;
   onToggle: (id: CategoryId) => void;
@@ -92,7 +94,7 @@ export function OptionSections(props: Props) {
   );
 }
 
-function PaintGroups({ config, paint, ownPaint, onPaint, paints }: Props & { paints: typeof PAINTS }) {
+function PaintGroups({ config, paint, ownPaint, factoryColor, onPaint, paints }: Props & { paints: typeof PAINTS }) {
   const isCustom = config.paint.id === 'custom';
   const customColor = config.paint.color ?? '#31506e';
   const customFinish = config.paint.finish ?? 'gloss';
@@ -117,7 +119,7 @@ function PaintGroups({ config, paint, ownPaint, onPaint, paints }: Props & { pai
                 aria-pressed={config.paint.id === p.id}
                 onClick={() => onPaint({ id: p.id })}
               >
-                <span className={styles.swatch} style={paintSwatch(own ? ownPaint.color : p.color, roughness)} />
+                <span className={styles.swatch} style={paintSwatch(own ? ownPaint.color : (p.id === 'factory' && factoryColor) || p.color, roughness)} />
               </button>
             );
           })}

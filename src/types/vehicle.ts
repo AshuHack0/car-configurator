@@ -70,6 +70,9 @@ export interface SurfacePreset {
   emissiveIntensity?: number;
 }
 
+/** Things on the car the customer can open. */
+export type OpeningPart = 'doors' | 'boot' | 'fuel';
+
 export type AttachmentId = 'spoiler' | 'frontLower' | 'rearLower' | 'roof' | 'exhaust';
 
 /**
@@ -133,11 +136,26 @@ export interface VehicleAssetConfig {
   /** Shown on the preview card when a component is not supported by this asset. */
   unsupportedNotes?: Record<string, string>;
   camera: { distance: number; target: Vec3 };
+  /** Front wheels turned by this many degrees, the way cars are posed for photographs. */
+  steer?: number;
   /**
-   * Doors that can swing open. Each node sits on its door's hinge line with the door's parts as
-   * children; `angle` is how far it opens, in degrees.
+   * Adjusts textured materials that keep their own maps (by material name): `tint` multiplied by
+   * `brightness` scales the texture's colour, e.g. to lift tyres from pure black to dusty rubber.
    */
-  doors?: { node: string; angle: number }[];
+  materialTweaks?: Record<string, { tint?: string; brightness?: number; roughness?: number }>;
+  /** The colour this car starts in, shown as its Factory Finish. Omitted: the catalogue's default. */
+  factoryPaint?: { name: string; color: string; metalness: number; roughness: number };
+  /**
+   * Panels that can open. Each node sits on its panel's hinge line with the panel's parts as
+   * children; `angle` is how far it opens, in degrees. Doors and flaps hinge about a vertical
+   * axis at their front edge; `axis: 'x'` is for lids that lift (the boot). `part` groups them
+   * under one control.
+   */
+  doors?: {
+    node: string; angle: number; part: OpeningPart; axis?: 'x' | 'y';
+    /** Where the clickable dot sits on the closed panel, and which way that surface faces. */
+    hotspot?: { at: Vec3; normal: Vec3; label: string };
+  }[];
   /** Seated viewpoint inside the cabin: where the eye is and what it looks at first. */
   cabin?: { eye: Vec3; look: Vec3 };
   /**

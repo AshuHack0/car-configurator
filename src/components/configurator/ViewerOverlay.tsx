@@ -2,18 +2,26 @@
 
 import { useState } from 'react';
 import { useProgress } from '@react-three/drei';
-import { AlertTriangle, Box, DoorOpen, ChevronUp, Eye, Image as ImageIcon, Maximize2, RefreshCw, Rotate3d, X } from 'lucide-react';
+import { AlertTriangle, Box, DoorOpen, ChevronUp, Fuel, PackageOpen, Eye, Image as ImageIcon, Maximize2, RefreshCw, Rotate3d, X } from 'lucide-react';
 import { ProductThumb } from '@/components/products/ProductThumb';
 import type { StageLighting } from '@/three/VehicleScene';
 import type { Product } from '@/types/product';
-import type { VehicleAssetConfig } from '@/types/vehicle';
+import type { OpeningPart, VehicleAssetConfig } from '@/types/vehicle';
 import styles from './ViewerOverlay.module.css';
 
 const LIGHTING: { id: StageLighting; label: string }[] = [
+  { id: 'courtyard', label: 'Courtyard' },
+  { id: 'outdoor', label: 'Riverside' },
   { id: 'studio', label: 'Studio' },
   { id: 'warm', label: 'Warm' },
   { id: 'cool', label: 'Cool' },
 ];
+
+const OPENINGS: Record<OpeningPart, { label: string; Icon: typeof DoorOpen }> = {
+  doors: { label: 'Doors', Icon: DoorOpen },
+  boot: { label: 'Boot', Icon: PackageOpen },
+  fuel: { label: 'Fuel cover', Icon: Fuel },
+};
 
 interface Props {
   asset: VehicleAssetConfig;
@@ -27,9 +35,10 @@ interface Props {
   onLighting: (l: StageLighting) => void;
   autoRotate: boolean;
   onAutoRotate: () => void;
-  doorsOpen?: boolean;
-  /** Undefined when the vehicle's doors cannot open. */
-  onDoors?: () => void;
+  /** Parts this vehicle can open (doors, boot, fuel flaps); empty when none. */
+  openable?: OpeningPart[];
+  openParts?: ReadonlySet<OpeningPart>;
+  onTogglePart?: (part: OpeningPart) => void;
   onFullscreen: () => void;
   loadError: string | null;
   onRetry: () => void;
@@ -80,11 +89,16 @@ export function ViewerOverlay(props: Props) {
             <button onClick={props.onAutoRotate} aria-pressed={props.autoRotate} className={props.autoRotate ? styles.active : ''}>
               <Rotate3d size={16} /> <span>360° View</span>
             </button>
-            {props.onDoors && (
-              <button onClick={props.onDoors} aria-pressed={!!props.doorsOpen} className={props.doorsOpen ? styles.active : ''}>
-                <DoorOpen size={16} /> <span>{props.doorsOpen ? 'Close doors' : 'Open doors'}</span>
-              </button>
-            )}
+            {props.openable?.map((part) => {
+              const open = !!props.openParts?.has(part);
+              const { label, Icon } = OPENINGS[part];
+              return (
+                <button key={part} onClick={() => props.onTogglePart?.(part)} aria-pressed={open} className={open ? styles.active : ''}
+                  title={`${open ? 'Close' : 'Open'} ${label.toLowerCase()}`}>
+                  <Icon size={16} /> <span>{label}</span>
+                </button>
+              );
+            })}
             <i />
           </>
         )}

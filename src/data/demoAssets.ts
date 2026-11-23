@@ -301,8 +301,8 @@ const VOLVO_S90: VehicleAssetConfig = {
     'mat:Metal Rough': { kind: 'metal', color: '#b9bcc1', roughness: 0.3 },
     'mat:metal_rough.002': { kind: 'metal', color: '#8d9095', roughness: 0.35 },
     'mat:Metal Black Rough': { kind: 'metal', color: '#101113', roughness: 0.3 },
-    'mat:Plastic': { kind: 'plastic', color: '#101112', roughness: 0.55 },
-    'mat:rubber': { kind: 'rubber', color: '#0a0a0b' },
+    'mat:Plastic': { kind: 'plastic', color: '#1b1c1d', roughness: 0.6 },
+    'mat:rubber': { kind: 'rubber', color: '#1f1e1d' },
     'mat:null': { kind: 'plastic', color: '#050505', roughness: 0.8 },
   },
   support: {
@@ -327,9 +327,20 @@ const VOLVO_S90: VehicleAssetConfig = {
     mirrors: 'Mirror caps are not set up on this 3D model yet.',
   },
   camera: { distance: 10.4, target: [0, 0.62, 0] },
+  factoryPaint: { name: 'Fusion Red Metallic', color: '#a3141b', metalness: 0.6, roughness: 0.3 },
+  // Negative turns the wheel faces towards the nose, so the opening front view shows the rims.
+  steer: -18,
+  // Tyres read as used rubber with a film of road dust, not pure black.
+  materialTweaks: { 'Tire.001': { tint: '#d9d2c6', brightness: 4, roughness: 0.96 } },
   doors: [
-    { node: 'door_fl', angle: 62 }, { node: 'door_fr', angle: 62 },
-    { node: 'door_rl', angle: 58 }, { node: 'door_rr', angle: 58 },
+    { node: 'door_fl', angle: 62, part: 'doors', hotspot: { at: [0.95, 0.74, 0.3], normal: [1, 0, 0], label: 'front left door' } },
+    { node: 'door_fr', angle: 62, part: 'doors', hotspot: { at: [-0.95, 0.74, 0.3], normal: [-1, 0, 0], label: 'front right door' } },
+    { node: 'door_rl', angle: 58, part: 'doors', hotspot: { at: [0.95, 0.76, -0.62], normal: [1, 0, 0], label: 'rear left door' } },
+    { node: 'door_rr', angle: 58, part: 'doors', hotspot: { at: [-0.95, 0.76, -0.62], normal: [-1, 0, 0], label: 'rear right door' } },
+    { node: 'boot', angle: 72, part: 'boot', axis: 'x', hotspot: { at: [0, 1.0, -2.36], normal: [0, 0.5, -1], label: 'boot' } },
+    // Petrol filler on the right rear wing and the charging port on the left front wing.
+    { node: 'flap_fuel', angle: 85, part: 'fuel', hotspot: { at: [-0.9, 0.94, -1.56], normal: [-1, 0, 0], label: 'fuel cover' } },
+    { node: 'flap_charge', angle: 85, part: 'fuel', hotspot: { at: [0.93, 0.78, 1.3], normal: [1, 0, 0], label: 'charging cover' } },
   ],
   // Left-hand drive: the eye sits a little inboard of the driver's headrest, looking at the dashboard.
   cabin: { eye: [0.24, 1.17, -0.12], look: [0.05, 0.92, 0.75] },

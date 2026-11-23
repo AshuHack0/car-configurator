@@ -10,6 +10,7 @@ import type { ResolvedPaint } from '@/hooks/useConfigurator';
 import type { Configuration, Product } from '@/types/product';
 import type { VehicleAssetConfig } from '@/types/vehicle';
 import { CABIN_REACH, CameraController, presetPosition, type CameraPreset } from './CameraController';
+import { COURTYARD_HALF, CourtyardStage } from './CourtyardStage';
 import { LocationBackdrop } from './LocationBackdrop';
 import { ModelErrorBoundary } from './ModelErrorBoundary';
 import { VehicleModel } from './VehicleModel';
@@ -17,7 +18,7 @@ import type { VehicleRig } from './rig';
 import type { RenderQuality } from './materials';
 
 /** `outdoor` is a photographed location; the others are the built-in studio. */
-export type StageLighting = 'outdoor' | 'studio' | 'warm' | 'cool';
+export type StageLighting = 'courtyard' | 'outdoor' | 'studio' | 'warm' | 'cool';
 
 interface Props {
   asset: VehicleAssetConfig;
@@ -34,7 +35,9 @@ interface Props {
   onError?: (error: Error) => void;
   /** Dimensions measured from the loaded 3D body (m). */
   onMeasured?: (dimensions: VehicleRig['dimensions']) => void;
-  doorsOpen?: boolean;
+  /** Hinge nodes (doors, boot, flaps) that are open, and the dot on each that toggles it. */
+  openNodes?: ReadonlySet<string>;
+  onToggleNode?: (node: string) => void;
 }
 
 interface Stage { key: string; rim: string; floor: string; bg: string; pool: string; walls: string }
@@ -43,14 +46,14 @@ interface Stage { key: string; rim: string; floor: string; bg: string; pool: str
  * Bright showroom stages. `walls` is the studio surround the paint reflects:
  * kept mid-dark so the softbox strips read as crisp highlight lines on the body.
  */
-const STAGES: Record<Exclude<StageLighting, 'outdoor'>, Stage> = {
+const STAGES: Record<'studio' | 'warm' | 'cool', Stage> = {
   studio: { key: '#ffffff', rim: '#e6eeff', floor: '#e6e8eb', bg: '#dcdfe3', pool: '#f7f8f9', walls: '#7b8088' },
   warm: { key: '#fff1e2', rim: '#ffd9b5', floor: '#ece6df', bg: '#e2dcd5', pool: '#faf6f1', walls: '#827a73' },
   cool: { key: '#eef4ff', rim: '#b5d2ff', floor: '#e2e7ee', bg: '#d6dce5', pool: '#f3f6fa', walls: '#727b88' },
 };
 
 /** Turns the location so its buildings sit behind the car in the opening view. */
-const LOCATION_ROTATION = Math.PI;
+const LOCATION_ROTATION = 2.66;
 
 function useIsMobile() {
   const [mobile, setMobile] = useState(false);
@@ -133,14 +136,16 @@ function StudioFloor({ stage }: { stage: Stage }) {
 
 export default function VehicleScene({
   asset, config, paint, supported, preset = 'threeQuarter', presetNonce = 0, lighting = 'studio',
-  autoRotate = false, hero = false, retryKey = 0, onError, onMeasured, doorsOpen = false,
+  autoRotate = false, hero = false, retryKey = 0, onError, onMeasured, openNodes, onToggleNode,
 }: Props) {
   /** Seated inside: the camera turns on the spot instead of circling the car. */
   const cabin = preset === 'interior' && !!asset.cabin && !hero;
   const mobile = useIsMobile();
   const quality: RenderQuality = mobile ? 'low' : 'high';
-  const outdoor = lighting === 'outdoor';
-  const stage = STAGES[outdoor ? 'studio' : lighting];
+  const courtyard = lighting === 'courtyard';
+  /** Sunlit stages bring their own light, ground and shadows. */
+  const outdoor = lighting === 'outdoor' || courtyard;
+  const stage = STAGES[lighting === 'outdoor' || lighting === 'courtyard' ? 'studio' : lighting];
   const initial = presetPosition('threeQuarter', asset, hero ? 1.3 : 1);
 
   return (
@@ -162,16 +167,22 @@ export default function VehicleScene({
       {!outdoor && <fog attach="fog" args={[stage.bg, 16, 42]} />}
 
       {/* One soft key light for self-shadowing; all other light comes from the environment. */}
-      <spotLight
-        position={[3, 10, 2]} angle={0.5} penumbra={1} intensity={outdoor ? 6 : 45} color={stage.key}
-        castShadow={!mobile} shadow-mapSize={[2048, 2048]} shadow-bias={-0.0001} shadow-normalBias={0.02}
-      />
+      {!outdoor && (
+        <spotLight
+          position={[3, 10, 2]} angle={0.5} penumbra={1} intensity={45} color={stage.key}
+          castShadow={!mobile} shadow-mapSize={[2048, 2048]} shadow-bias={-0.0001} shadow-normalBias={0.02}
+        />
+      )}
       {/*
         Soft sky/floor fill, like a studio's overhead diffusion. It lifts the diffuse base coat of
         light paints (whites read grey against the darker reflection surround otherwise) without
         adding reflections, so dark paints and highlight lines are barely affected.
       */}
-      {outdoor ? (
+      {courtyard ? (
+        <Suspense fallback={null}>
+          <CourtyardStage shadows={!mobile} />
+        </Suspense>
+      ) : outdoor ? (
         <Suspense fallback={null}>
           <LocationBackdrop quality={quality} rotation={LOCATION_ROTATION} />
         </Suspense>
@@ -184,7 +195,7 @@ export default function VehicleScene({
 
       <ModelErrorBoundary resetKey={`${asset.modelUrl}:${retryKey}`} onError={onError}>
         <Suspense fallback={null}>
-          <VehicleModel asset={asset} config={config} paint={paint} supported={supported} quality={quality} onMeasured={onMeasured} doorsOpen={doorsOpen} />
+          <VehicleModel asset={asset} config={config} paint={paint} supported={supported} quality={quality} onMeasured={onMeasured} openNodes={openNodes} onToggleNode={cabin ? undefined : onToggleNode} />
         </Suspense>
       </ModelErrorBoundary>
 
@@ -192,8 +203,9 @@ export default function VehicleScene({
         Two-layer studio shadow: a tight, darker layer where the body meets the floor and a
         wide, faint layer for the soft ambient spread under a car lit by overhead softboxes.
       */}
-      <ContactShadows position={[0, 0.002, 0]} opacity={outdoor ? 0.95 : 0.7} scale={10} blur={1.6} far={0.6} color="#10141a" resolution={mobile ? 256 : 512} />
-      <ContactShadows position={[0, 0.001, 0]} opacity={outdoor ? 0.7 : 0.45} scale={14} blur={3.2} far={3} color="#1a1f27" resolution={mobile ? 256 : 512} />
+      {/* Outdoors the sun casts the shadow; the studio needs soft contact shadows instead. */}
+      {!outdoor && <ContactShadows position={[0, 0.002, 0]} opacity={0.7} scale={10} blur={1.6} far={0.6} color="#10141a" resolution={mobile ? 256 : 512} />}
+      {!outdoor && <ContactShadows position={[0, 0.001, 0]} opacity={0.45} scale={14} blur={3.2} far={3} color="#1a1f27" resolution={mobile ? 256 : 512} />}
 
       {/*
         Seamless cyclorama floor: unlit, fading to the backdrop tone, so there is
@@ -210,7 +222,7 @@ export default function VehicleScene({
         enablePan={false}
         enableZoom={!hero && !cabin}
         minDistance={cabin ? CABIN_REACH : 4.5}
-        maxDistance={cabin ? CABIN_REACH : 20}
+        maxDistance={cabin ? CABIN_REACH : courtyard ? COURTYARD_HALF - 2 : 20}
         maxPolarAngle={cabin ? Math.PI * 0.72 : Math.PI / 2 - 0.04}
         minPolarAngle={cabin ? Math.PI * 0.22 : 0}
         rotateSpeed={cabin ? -0.45 : 1}

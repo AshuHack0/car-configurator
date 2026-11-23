@@ -4,7 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   CUSTOM_PAINT_FINISHES, CUSTOM_PAINT_PRICE, PAINTS, SLOT_LABELS, getProduct, productFinish,
 } from '@/data/products';
+import { getAssetConfig } from '@/data/demoAssets';
+import { getVehicle } from '@/data/vehicles';
 import type { Configuration, Product, SavedConfiguration, SlotId } from '@/types/product';
+import type { VehicleAssetConfig } from '@/types/vehicle';
 
 const STORAGE_PREFIX = 'dream-machine:config:';
 
@@ -37,7 +40,11 @@ export interface OwnPaint {
 
 const finishFor = (id?: string) => CUSTOM_PAINT_FINISHES.find((x) => x.id === id) ?? CUSTOM_PAINT_FINISHES[0];
 
-export function resolvePaint(paint: Configuration['paint'], own?: OwnPaint): ResolvedPaint {
+export function resolvePaint(paint: Configuration['paint'], own?: OwnPaint, factory?: VehicleAssetConfig['factoryPaint']): ResolvedPaint {
+  // A car with its own factory colour starts in that, not in the catalogue's default.
+  if (paint.id === 'factory' && !own && factory) {
+    return { id: 'factory', ...factory, clearcoat: 1, clearcoatRoughness: 0.03, price: 0 };
+  }
   if (paint.id === 'factory' && own) {
     const f = finishFor(own.finish);
     return {
@@ -114,7 +121,13 @@ export function useConfigurator(vehicleId: string, year?: number, generation?: s
     setPreviewProduct(null);
   }, []);
 
-  const paint = useMemo(() => resolvePaint(config.paint, ownPaint), [config.paint, ownPaint]);
+  const factoryPaint = useMemo(() => {
+    const vehicle = getVehicle(vehicleId);
+    const asset = vehicle && getAssetConfig(vehicle.assetId);
+    // Only for the car the 3D body really is, not for models borrowing it as a stand-in.
+    return asset?.vehicles?.includes(vehicleId) ? asset.factoryPaint : undefined;
+  }, [vehicleId]);
+  const paint = useMemo(() => resolvePaint(config.paint, ownPaint, factoryPaint), [config.paint, ownPaint, factoryPaint]);
 
   const lineItems = useMemo<LineItem[]>(() => {
     const items: LineItem[] = [];
