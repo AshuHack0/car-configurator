@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import type { CSSProperties } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { ASSET_CREDITS } from '@/data/demoAssets';
 import { BRANDS } from '@/data/vehicles';
@@ -13,7 +14,7 @@ export function SiteFooter() {
           Every car leaves the factory the same.<br />
           <span>Yours doesn&apos;t have to.</span>
         </p>
-        <Link href="/vehicles" className={styles.big} data-reveal style={{ '--d': 120 } as React.CSSProperties}>
+        <Link href="/vehicles" className={styles.big} data-reveal style={{ '--d': 120 } as CSSProperties}>
           Start your build <ArrowUpRight size={22} />
         </Link>
       </div>

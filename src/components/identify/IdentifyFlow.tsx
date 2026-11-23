@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertTriangle, ArrowRight, Camera, Check, ImagePlus, Images, Lightbulb, Loader2, RotateCcw, ScanSearch, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
@@ -9,6 +9,7 @@ import { IDENTIFY_BRANDS, VEHICLES, getBrand, getVehicle } from '@/data/vehicles
 import { resizeForUpload, type LocalPhotoIssue } from '@/lib/resizeImage';
 import type { IdentifyImage, IdentifyResponse, IdentifyResult, PaintFinish, PhotoProblem } from '@/types/identify';
 import { PHOTO_ISSUE_TEXT, PHOTO_TIPS } from './photoGuide';
+import { SplitWords } from '@/components/motion/split';
 import styles from './IdentifyFlow.module.css';
 
 /** One clear photo is enough to identify a car; more angles raise confidence. */
@@ -138,13 +139,13 @@ export function IdentifyFlow() {
   return (
     <main className={styles.page}>
       <header className={styles.head}>
-        <span className={styles.step}>Your car, in 3D</span>
-        <h1>Show us your car.</h1>
-        <p>
+        <span className={`mono ${styles.step}`} data-reveal>Your car, in 3D</span>
+        <h1 data-reveal="words"><SplitWords text={'Show us\nyour car.'} /></h1>
+        <p data-reveal style={{ '--d': 250 } as CSSProperties}>
           One clear photo is enough — add front, rear and side views for the most accurate result. We recognise the exact
           model, generation and paint, then open your car in the 3D configurator so you can try parts on it.
         </p>
-        <span className={styles.pilot}>Pilot: {brandList}</span>
+        <span className={`mono ${styles.pilot}`} data-reveal style={{ '--d': 350 } as CSSProperties}>Pilot: {brandList}</span>
       </header>
 
       {phase.name === 'result' ? (

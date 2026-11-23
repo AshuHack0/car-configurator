@@ -153,7 +153,7 @@ export default function HomePage() {
             </div>
             <div className={styles.tileHead}>
               <span className={`mono ${styles.live}`}><i /> Live · WebGL</span>
-              <span className="mono">60 fps</span>
+              <span className="mono">360° orbit</span>
             </div>
             <div className={styles.tileText}>
               <h3>Real-time 3D.</h3>
@@ -179,7 +179,7 @@ export default function HomePage() {
               <div><dt className="mono">Wheelbase</dt><dd><span data-count="2941">0</span> mm</dd></div>
               <div><dt className="mono">Width</dt><dd><span data-count="1879">0</span> mm</dd></div>
             </dl>
-            <p className={styles.tileNote}>Parts are scaled to the body they mount on, measured from each car&apos;s 3D model. Shown: Volvo S90.</p>
+            <p className={styles.tileNote}>Parts are scaled to the body they mount on, measured from each car&apos;s 3D model. Shown: the Volvo S90&apos;s published dimensions.</p>
           </div>
 
           <Link href="/configurator/volvo-s90" className={`${styles.tile} ${styles.tileDoors}`} data-reveal style={d(0)}>

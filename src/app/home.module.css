@@ -161,33 +161,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.scrollCue {
-  position: absolute;
-  left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  color: var(--faint);
-}
-
-.scrollCue i {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 52px;
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  animation: nudge 2.2s var(--ease-in-out) infinite;
-}
-
-@keyframes nudge {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(6px); }
-}
-
 /* ======================================================================
  * Brand marquee
  * ==================================================================== */
@@ -878,6 +851,14 @@ a.tile:hover .tileLink svg {
 }
 
 @media (max-width: 760px) {
+  /* Phones: the type covers more of the photo, so the grade is heavier. */
+  .heroGrade {
+    background:
+      linear-gradient(180deg, rgba(7, 8, 10, 0.5) 0%, rgba(7, 8, 10, 0.35) 30%, rgba(7, 8, 10, 0.82) 60%, rgba(7, 8, 10, 0.96) 100%);
+  }
+  .heroParallax img {
+    object-position: 62% 50%;
+  }
   .stats {
     grid-template-columns: repeat(2, 1fr);
     width: 100%;
@@ -889,9 +870,6 @@ a.tile:hover .tileLink svg {
     border-top: 1px solid rgba(255, 255, 255, 0.1);
   }
   .heroTop > :last-child {
-    display: none;
-  }
-  .scrollCue {
     display: none;
   }
   .tileDoors,
