@@ -10,9 +10,8 @@
  *  1. Resize: 2048 only where it is seen up close (tyre, factory rims, front seat, dashboard);
  *     everything else 1024. Sizes are kept to multiples of 4, which block compression needs.
  *  2. Encode to KTX2: normal maps as UASTC (normal-map mode, keeps them smooth); colour and
- *     emissive maps as ETC1S (perceptual, small); metal/roughness/occlusion data as UASTC (linear),
- *     since ETC1S smeared roughness and made the cabin look glossy. Strong RDO + Zstandard keep
- *     the download close to the WebP original.
+ *     emissive maps as ETC1S (perceptual, sRGB flag); metal/roughness/occlusion data as ETC1S with
+ *     the linear flag (an sRGB flag on data maps made the cabin look glossy).
  *  3. Draco geometry, as before. Node names, materials and the opening-panel rig are unchanged.
  *
  *   node scripts/optimize-volvo-v3.mjs [in=public/models/vehicles/volvo-s90-v2.glb] [out=public/models/vehicles/volvo-s90-v3.glb]
@@ -78,10 +77,14 @@ for (const texture of root.listTextures()) {
     ? { isUASTC: true, isNormalMap: true, isPerceptual: false, uastcLDRQualityLevel: 2, enableRDO: true, rdoQualityLevel: 3, needSupercompression: true }
     : isColor
       ? { isUASTC: false, isPerceptual: true, qualityLevel: 230, compressionLevel: 2 }
-      // Roughness/metal maps need UASTC: ETC1S blurred the roughness channel and made the cabin glossy.
-      : { isUASTC: true, isPerceptual: false, uastcLDRQualityLevel: 2, enableRDO: true, rdoQualityLevel: 3, needSupercompression: true };
+      : { isUASTC: false, isPerceptual: false, qualityLevel: 200, compressionLevel: 2 };
 
-  const ktx = await encodeToKTX2(new Uint8Array(png), { ...options, generateMipmap: true, isYFlip: false, imageDecoder: raw });
+  // The KTX2 transfer flag tells the browser how to read the texture. The encoder defaults to sRGB,
+  // which made roughness/metal maps decode darker (lower roughness = a glossy cabin). Only colour
+  // maps are sRGB; normals and data are linear.
+  const ktx = await encodeToKTX2(new Uint8Array(png), {
+    ...options, isSetKTX2SRGBTransferFunc: isColor, generateMipmap: true, isYFlip: false, imageDecoder: raw,
+  });
   before += image.byteLength;
   after += ktx.byteLength;
   gpuBefore += meta.width * meta.height * 4 * 1.33;
@@ -89,7 +92,7 @@ for (const texture of root.listTextures()) {
   texture.setImage(ktx);
   texture.setMimeType('image/ktx2');
   if (texture.getURI()) texture.setURI(texture.getURI().replace(/\.(png|jpe?g|webp)$/i, '.ktx2'));
-  console.log(`${name.slice(0, 34).padEnd(35)} ${meta.width}→${w}  ${isNormal ? 'UASTC normal' : isColor ? 'ETC1S colour' : 'UASTC data'}`);
+  console.log(`${name.slice(0, 34).padEnd(35)} ${meta.width}→${w}  ${isNormal ? 'UASTC normal' : isColor ? 'ETC1S colour' : 'ETC1S data'}`);
 }
 
 doc.createExtension(KHRTextureBasisu).setRequired(true);
