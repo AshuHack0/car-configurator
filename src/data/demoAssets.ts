@@ -385,12 +385,28 @@ const VOLVO_S90_V2: VehicleAssetConfig = {
   defaultLighting: 'plains',
 };
 
+/**
+ * Volvo S90, third version: v2's model with GPU-compressed textures (scripts/optimize-volvo-v3.mjs).
+ * Textures are KTX2 / Basis Universal and stay compressed on the graphics card: ~83 MB of texture
+ * memory instead of ~540 MB (v2) or ~920 MB (v1). 2048 px is kept only for the tyre, factory rims,
+ * front seat and dashboard; the rest is 1024. Same rig, materials, shadow and default scene as v2.
+ */
+const VOLVO_S90_V3: VehicleAssetConfig = {
+  ...VOLVO_S90_V2,
+  id: 'volvo-s90-v3',
+  label: 'Volvo S90 (v3)',
+  shortLabel: 'Volvo S90 v3',
+  modelUrl: '/models/vehicles/volvo-s90-v3.glb',
+  vehicles: ['volvo-s90-v3'],
+};
+
 export const VEHICLE_ASSETS: Record<string, VehicleAssetConfig> = {
   [STAND_IN.id]: STAND_IN,
   [BMW_M4_G82.id]: BMW_M4_G82,
   [PORSCHE_911_991.id]: PORSCHE_911_991,
   [VOLVO_S90.id]: VOLVO_S90,
   [VOLVO_S90_V2.id]: VOLVO_S90_V2,
+  [VOLVO_S90_V3.id]: VOLVO_S90_V3,
 };
 
 /** Every asset whose model needs a credit line (CC licences). */
