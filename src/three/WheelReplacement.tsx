@@ -20,18 +20,22 @@ interface Props {
  *  2. The selected wheel GLB is loaded (cached) and cloned four times.
  *  3. Each clone gets that wheel's position, outward-facing rotation and measured scale.
  *  4. Once loaded, the original rim/tyre meshes are hidden; brake discs stay visible.
+ *     Cars whose own tyres are kept (`asset.wheels.tyre`) only lose their rims, and the
+ *     replacement's generated tyre is hidden instead.
  */
+const TYRE_SLOT = ['Tire'];
 export function WheelReplacement({ rig, lib, model, finish }: Props) {
   const finishMaterial = useMemo(() => createFinishMaterial(finish), [finish]);
   useEffect(() => () => finishMaterial.dispose(), [finishMaterial]);
 
   const placements = useMemo(() => rig.wheels.map((w) => w.placement), [rig]);
   const originals = useMemo(() => rig.wheels.flatMap((w) => w.originals), [rig]);
+  const keepsTyre = rig.wheels.some((w) => w.keepsTyre);
 
   if (!model || rig.wheels.length === 0) return null;
   return (
     <Suspense fallback={null}>
-      <PartAttachment url={model} placements={placements} lib={lib} finish={finishMaterial} hides={originals} />
+      <PartAttachment url={model} placements={placements} lib={lib} finish={finishMaterial} hides={originals} hideSlots={keepsTyre ? TYRE_SLOT : undefined} />
     </Suspense>
   );
 }

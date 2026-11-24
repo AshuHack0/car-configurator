@@ -260,7 +260,8 @@ const VOLVO_S90: VehicleAssetConfig = {
   forward: '+z',
   scale: 1,
   paintMaterial: 'Car Paint',
-  wheels: { nodes: ['wheel_fl', 'wheel_fr', 'wheel_rl', 'wheel_rr'], keep: /brake|caliper|wheelhub/i },
+  // Fitted wheels keep the car's own textured tyres and only swap the rims.
+  wheels: { nodes: ['wheel_fl', 'wheel_fr', 'wheel_rl', 'wheel_rr'], keep: /brake|caliper|wheelhub/i, tyre: /^Tire/ },
   // Mirrors are left out so the measured width is the body, not mirror tip to mirror tip.
   bodyMeshes: [
     'Body Frame', 'Hood', 'Trunk', 'Bumper Front', 'Bumper Rear', 'Fender Front',

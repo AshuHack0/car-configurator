@@ -17,6 +17,8 @@ export interface PartAttachmentProps {
   hides?: THREE.Mesh[];
   /** Scale the part so it is `width` metres wide (see `span` on attach products). */
   fit?: { width: number; uniform?: boolean };
+  /** Material slots of the part not to show (e.g. its own tyre when the car's tyre is kept). */
+  hideSlots?: string[];
 }
 
 /** Parts are never stretched or shrunk beyond this, so a bad measurement cannot produce a silly part. */
@@ -27,7 +29,7 @@ const FIT_RANGE: [number, number] = [0.72, 1.3];
  * placement, binds its named material slots and fades it in with a short
  * scale animation. Used by wheels, spoilers, bumpers, skirts and accessories.
  */
-export function PartAttachment({ url, placements: authored, lib, finish, hides, fit }: PartAttachmentProps) {
+export function PartAttachment({ url, placements: authored, lib, finish, hides, fit, hideSlots }: PartAttachmentProps) {
   const { scene } = useModel(url);
 
   // Fit to the car: measure the part itself, then scale it to the width this car calls for.
@@ -44,9 +46,21 @@ export function PartAttachment({ url, placements: authored, lib, finish, hides, 
     }));
   }, [authored, scene, fitWidth, fitUniform]);
 
+  const hidden = hideSlots?.join('|');
   const clones = useMemo(
-    () => placements.map(() => scene.clone(true)),
-    [scene, placements],
+    () => placements.map(() => {
+      const c = scene.clone(true);
+      // Slot names are read before bindPartMaterials swaps in the runtime materials.
+      if (hidden) {
+        const slots = new Set(hidden.split('|'));
+        c.traverse((o) => {
+          const m = o as THREE.Mesh;
+          if (m.isMesh && slots.has((m.material as THREE.Material).name)) m.visible = false;
+        });
+      }
+      return c;
+    }),
+    [scene, placements, hidden],
   );
 
   useEffect(() => {

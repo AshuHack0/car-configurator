@@ -47,6 +47,8 @@ export interface MaterialLibrary {
   aluminium: THREE.MeshStandardMaterial;
   titanium: THREE.MeshStandardMaterial;
   rubber: THREE.MeshPhysicalMaterial;
+  /** Diamond-cut alloy: bright, fine-grained metal on wheel lips and bezels. */
+  machined: THREE.MeshPhysicalMaterial;
   dispose: () => void;
 }
 
@@ -64,11 +66,18 @@ function createCarPaint() {
 export function createMaterialLibrary(): MaterialLibrary {
   const paint = createCarPaint();
   const rubber = new THREE.MeshPhysicalMaterial({
-    name: 'Runtime_Rubber', color: '#1c1d1f', metalness: 0, roughness: 0.9, sheen: 0.25, sheenRoughness: 0.8, sheenColor: '#3a3b3e',
+    // Used rubber with a film of road dust, not pure black (matches the Volvo's own tyres).
+    name: 'Runtime_Rubber', color: '#2a2927', metalness: 0, roughness: 0.93, sheen: 0.3, sheenRoughness: 0.85, sheenColor: '#55524c',
+  });
+  const machined = new THREE.MeshPhysicalMaterial({
+    name: 'Runtime_Machined', color: '#d4d7db', metalness: 1, roughness: 0.16, clearcoat: 0.6, clearcoatRoughness: 0.08,
   });
   const carbon = new THREE.MeshPhysicalMaterial({
-    name: 'Runtime_Carbon', map: getCarbonTexture(), color: '#ffffff', metalness: 0.35, roughness: 0.42,
-    clearcoat: 1, clearcoatRoughness: 0.04,
+    // Dark resin weave under a glossy lacquer: the colour comes from the weave, the shine from the
+    // clear coat. (Metalness made it mirror the sky and read as silver outdoors.)
+    name: 'Runtime_Carbon', map: getCarbonTexture(), color: '#ffffff', metalness: 0.05, roughness: 0.6, specularIntensity: 0.4,
+    // A slightly softer, thinner lacquer: crisp enough to shine, without mirroring the whole sky.
+    clearcoat: 0.7, clearcoatRoughness: 0.14,
   });
   const glossBlack = new THREE.MeshPhysicalMaterial({
     name: 'Runtime_GlossBlack', color: '#050506', metalness: 0.2, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.02,
@@ -76,8 +85,8 @@ export function createMaterialLibrary(): MaterialLibrary {
   const chrome = new THREE.MeshStandardMaterial({ name: 'Runtime_Chrome', color: '#ffffff', metalness: 1, roughness: 0.04 });
   const aluminium = new THREE.MeshStandardMaterial({ name: 'Runtime_Alu', color: '#1b1c1f', metalness: 0.85, roughness: 0.42 });
   const titanium = new THREE.MeshStandardMaterial({ name: 'Runtime_Titanium', color: '#9b8fb3', metalness: 1, roughness: 0.18 });
-  const all = [paint, carbon, glossBlack, chrome, aluminium, titanium, rubber];
-  return { paint, carbon, glossBlack, chrome, aluminium, titanium, rubber, dispose: () => all.forEach((m) => m.dispose()) };
+  const all = [paint, carbon, glossBlack, chrome, aluminium, titanium, rubber, machined];
+  return { paint, carbon, glossBlack, chrome, aluminium, titanium, rubber, machined, dispose: () => all.forEach((m) => m.dispose()) };
 }
 
 export function applyPaint(material: THREE.MeshPhysicalMaterial, paint: ResolvedPaint) {
@@ -173,7 +182,9 @@ export function createFinishMaterial(finish?: Finish) {
     color: finish?.color ?? '#1a1a1a',
     metalness: finish?.metalness ?? 0.8,
     roughness: finish?.roughness ?? 0.3,
-    clearcoat: finish?.clearcoat ?? 0,
+    // Alloy wheels are lacquered: a light clear coat gives the crisp edge highlights of a real rim.
+    clearcoat: finish?.clearcoat ?? 0.5,
+    clearcoatRoughness: 0.08,
   });
 }
 
@@ -192,8 +203,8 @@ export function bindPartMaterials(root: THREE.Object3D, lib: MaterialLibrary, fi
       case 'Paint': mesh.material = lib.paint; break;
       case 'Carbon': mesh.material = lib.carbon; break;
       case 'Gloss_Black': mesh.material = lib.glossBlack; break;
-      case 'Chrome':
-      case 'Rim_Lip': mesh.material = lib.chrome; break;
+      case 'Chrome': mesh.material = lib.chrome; break;
+      case 'Rim_Lip': mesh.material = lib.machined; break;
       case 'Aluminium_Black': mesh.material = lib.aluminium; break;
       case 'Titanium': mesh.material = lib.titanium; break;
       case 'Tire': mesh.material = lib.rubber; break;

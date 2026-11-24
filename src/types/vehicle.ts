@@ -113,7 +113,14 @@ export interface VehicleAssetConfig {
   /** Material that carries the body paint. */
   paintMaterial: string;
   /** Nodes whose descendant meshes form a road wheel; `keep` meshes (e.g. brakes) stay visible. */
-  wheels: { nodes: string[]; keep: RegExp };
+  wheels: {
+    nodes: string[]; keep: RegExp;
+    /**
+     * The car's own tyres (mesh or material name). When set, a fitted wheel keeps these tyres and
+     * only the rims are swapped, so the real textured rubber stays on the car.
+     */
+    tyre?: RegExp;
+  };
   /** Meshes used as raycast targets for snapping. */
   bodyMeshes: string[];
   attachments: Partial<Record<AttachmentId, AttachmentPoint>>;

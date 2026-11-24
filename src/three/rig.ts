@@ -15,6 +15,8 @@ export interface WheelSlot {
   node: string;
   /** Original meshes hidden when a replacement wheel is fitted. */
   originals: THREE.Mesh[];
+  /** The car's own tyre is kept, so the replacement's tyre is not shown. */
+  keepsTyre: boolean;
   placement: Placement;
 }
 
@@ -68,13 +70,18 @@ export function buildRig(root: THREE.Object3D, asset: VehicleAssetConfig): Vehic
   for (const nodeName of asset.wheels.nodes) {
     const node = root.getObjectByName(sanitize(nodeName));
     if (!node) continue;
-    const originals: THREE.Mesh[] = [];
+    const parts: THREE.Mesh[] = [];
     node.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh && !asset.wheels.keep.test(o.name)) originals.push(o as THREE.Mesh);
+      if ((o as THREE.Mesh).isMesh && !asset.wheels.keep.test(o.name)) parts.push(o as THREE.Mesh);
     });
-    if (!originals.length) continue;
+    if (!parts.length) continue;
+    const isTyre = (m: THREE.Mesh) => !!asset.wheels.tyre
+      && (asset.wheels.tyre.test(m.name) || asset.wheels.tyre.test((m.material as THREE.Material).name));
+    // Measured with the tyre (the full wheel size), but the tyre itself stays on when it is kept.
+    const originals = parts.filter((m) => !isTyre(m));
+    const keepsTyre = originals.length < parts.length;
     const box = new THREE.Box3();
-    originals.forEach((m) => box.expandByObject(m));
+    parts.forEach((m) => box.expandByObject(m));
     const center = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
     const s = size.y / PART_WHEEL_DIAMETER;
@@ -85,6 +92,7 @@ export function buildRig(root: THREE.Object3D, asset: VehicleAssetConfig): Vehic
     wheels.push({
       node: nodeName,
       originals,
+      keepsTyre,
       placement: { position: center.toArray() as Vec3, rotation: [0, outward, 0], scale: [sx, s, s] },
     });
   }
