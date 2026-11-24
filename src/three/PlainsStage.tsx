@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo } from 'react';
-import * as THREE from 'three';
 import { Environment, useEnvironment } from '@react-three/drei';
 import { GroundedSkybox } from 'three/examples/jsm/objects/GroundedSkybox.js';
 
