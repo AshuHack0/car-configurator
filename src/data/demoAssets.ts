@@ -400,6 +400,44 @@ const VOLVO_S90_V3: VehicleAssetConfig = {
   vehicles: ['volvo-s90-v3'],
 };
 
+/**
+ * Porsche 911 Carrera 4S (991), second version: the same Sketchfab model as PORSCHE_911_991 but at
+ * full detail (475k triangles instead of 288k), exported from the user's carPorsche.blend and run
+ * through scripts/export-porsche-911-v2.py (separates the doors and front lid onto hinges),
+ * scripts/prepare-vehicles.mjs (wheel split, real length) and the KTX2 texture pass.
+ * The source has no cabin (only seat outlines); the export script builds a simple one (bucket seats,
+ * dashboard, steering wheel, console, carpet, headliner) so the seated view works. No trim sets yet.
+ */
+const PORSCHE_911_V2: VehicleAssetConfig = {
+  ...PORSCHE_911_991,
+  id: 'porsche-911-v2',
+  label: 'Porsche 911 Carrera 4S (991, v2)',
+  shortLabel: 'Porsche 911 v2',
+  modelUrl: '/models/vehicles/porsche-911-v2.glb',
+  vehicles: ['porsche-911-v2'],
+  // Fitted wheels keep the model's own tyres and only swap the rims.
+  wheels: { nodes: ['wheel_fl', 'wheel_fr', 'wheel_rl', 'wheel_rr'], keep: /brake/i, tyre: /^rubber$/ },
+  factoryPaint: { name: 'Guards Red', color: '#b3100f', metalness: 0.1, roughness: 0.28 },
+  // The offline photo views were rendered from the older, lighter model: this one opens in 3D.
+  renders: undefined,
+  // Doors swing about their front edge; the 911's luggage lid is at the front and lifts at the nose
+  // (negative angle), hinged at the windscreen.
+  doors: [
+    { node: 'door_fl', angle: 62, part: 'doors', hotspot: { at: [0.9, 0.6, 0.02], normal: [1, 0, 0], label: 'left door' } },
+    { node: 'door_fr', angle: 62, part: 'doors', hotspot: { at: [-0.9, 0.6, 0.02], normal: [-1, 0, 0], label: 'right door' } },
+    { node: 'frunk', angle: -62, part: 'boot', axis: 'x', hotspot: { at: [0, 0.86, 1.2], normal: [0, 1, 0.35], label: 'front luggage lid' } },
+  ],
+  // Driver's eye (left-hand drive) just ahead of the headrest, looking at the instrument hood.
+  // From the export script's frame: x' = 1.025x + 0.016, y' = 1.025z + 0.649, z' = -1.025y - 0.079.
+  cabin: { eye: [0.318, 0.957, -0.407], look: [0.221, 0.772, 0.639] },
+  surfaces: {
+    ...PORSCHE_911_991.surfaces,
+    'mat:leather': { kind: 'leather', color: '#1a1a1c' },
+    'mat:carpet': { kind: 'fabric', color: '#111113' },
+    'mat:headliner': { kind: 'fabric', color: '#3b3b3f' },
+  },
+};
+
 export const VEHICLE_ASSETS: Record<string, VehicleAssetConfig> = {
   [STAND_IN.id]: STAND_IN,
   [BMW_M4_G82.id]: BMW_M4_G82,
@@ -407,6 +445,7 @@ export const VEHICLE_ASSETS: Record<string, VehicleAssetConfig> = {
   [VOLVO_S90.id]: VOLVO_S90,
   [VOLVO_S90_V2.id]: VOLVO_S90_V2,
   [VOLVO_S90_V3.id]: VOLVO_S90_V3,
+  [PORSCHE_911_V2.id]: PORSCHE_911_V2,
 };
 
 /** Every asset whose model needs a credit line (CC licences). */

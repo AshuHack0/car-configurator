@@ -177,4 +177,4 @@ export const photoUrl = (key: string): string | null => {
 };
 
 /** Entries that reuse another entry's photo (a second version of the same car). */
-const SAME_PHOTO: Record<string, string> = { 'volvo-s90-v2': 'volvo-s90', 'volvo-s90-v3': 'volvo-s90' };
+const SAME_PHOTO: Record<string, string> = { 'volvo-s90-v2': 'volvo-s90', 'volvo-s90-v3': 'volvo-s90', 'porsche-911-v2': 'porsche-911' };

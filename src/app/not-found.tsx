@@ -6,7 +6,7 @@ import type { CSSProperties } from 'react';
 import { SplitWords } from '@/components/motion/split';
 import styles from './not-found.module.css';
 
-export const metadata = { title: 'Page not found — Modifed' };
+export const metadata = { title: 'Page not found — Modified' };
 
 export default function NotFound() {
   return (

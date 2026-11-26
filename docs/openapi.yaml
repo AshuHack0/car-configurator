@@ -1,0 +1,1135 @@
+openapi: 3.1.0
+info:
+  title: MODIFIED API
+  version: 1.0.0-draft
+  summary: Backend for the MODIFIED 3D car configurator (proposed, not built yet).
+  description: |
+    Catalogue, server-side pricing, saved and shareable builds, enquiries (leads), AI photo features
+    and a staff admin area. Money is integer INR. Dates are ISO 8601 UTC.
+    Human-readable guide: docs/04-api-reference.md.
+servers:
+  - url: http://localhost:4000/api/v1
+    description: Local development
+  - url: https://api.modified.example/api/v1
+    description: Production (placeholder domain)
+tags:
+  - name: Health
+  - name: Catalogue
+  - name: Pricing
+  - name: Builds
+  - name: Enquiries
+  - name: AI
+  - name: Auth
+  - name: Admin
+
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Service health
+      operationId: getHealth
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [ok, degraded] }
+                  version: { type: string, example: 1.0.0 }
+                  db: { type: string, enum: [ok, down] }
+                  queue: { type: string, enum: [ok, down] }
+
+  /brands:
+    get:
+      tags: [Catalogue]
+      summary: List brands
+      operationId: listBrands
+      responses:
+        '200':
+          description: Brands
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Brand' }
+
+  /vehicles:
+    get:
+      tags: [Catalogue]
+      summary: List published vehicles
+      operationId: listVehicles
+      parameters:
+        - { name: brand, in: query, schema: { type: string }, example: porsche }
+        - { name: body, in: query, schema: { $ref: '#/components/schemas/BodyStyle' } }
+        - { name: q, in: query, schema: { type: string }, description: Search by brand or model name }
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: A page of vehicles
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/VehicleSummary' }
+                  nextCursor: { type: [string, 'null'] }
+
+  /vehicles/{vehicleId}:
+    get:
+      tags: [Catalogue]
+      summary: Get one vehicle with its 3D asset
+      operationId: getVehicle
+      parameters: [{ $ref: '#/components/parameters/VehicleId' }]
+      responses:
+        '200':
+          description: Vehicle
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Vehicle' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /vehicles/{vehicleId}/compatibility:
+    get:
+      tags: [Catalogue]
+      summary: How each product can be shown on this vehicle's 3D model
+      operationId: getCompatibility
+      parameters: [{ $ref: '#/components/parameters/VehicleId' }]
+      responses:
+        '200':
+          description: One entry per published product
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  required: [productId, support]
+                  properties:
+                    productId: { type: string, example: wheels-amg-twin }
+                    support: { $ref: '#/components/schemas/Support' }
+                    note: { type: [string, 'null'] }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /categories:
+    get:
+      tags: [Catalogue]
+      summary: Option categories and their slots
+      operationId: listCategories
+      responses:
+        '200':
+          description: Categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Category' }
+
+  /products:
+    get:
+      tags: [Catalogue]
+      summary: List published products
+      operationId: listProducts
+      parameters:
+        - { name: category, in: query, schema: { type: string }, example: wheels }
+        - { name: slot, in: query, schema: { $ref: '#/components/schemas/Slot' } }
+        - { name: vehicleId, in: query, schema: { type: string }, description: Adds `support` for this vehicle to each product }
+      responses:
+        '200':
+          description: Products
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Product' }
+
+  /products/{productId}:
+    get:
+      tags: [Catalogue]
+      summary: Get one product
+      operationId: getProduct
+      parameters:
+        - { name: productId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: Product
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /paints:
+    get:
+      tags: [Catalogue]
+      summary: Paint options
+      operationId: listPaints
+      responses:
+        '200':
+          description: Paints, including `custom` (paint to sample)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Paint' }
+
+  /quotes:
+    post:
+      tags: [Pricing]
+      summary: Price a configuration (nothing is stored)
+      operationId: createQuote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Configuration' }
+      responses:
+        '200':
+          description: Server-calculated price
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Quote' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /builds:
+    post:
+      tags: [Builds]
+      summary: Save a build
+      operationId: createBuild
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Configuration' }
+      responses:
+        '201':
+          description: Saved. `editToken` is returned only here; keep it to update or delete the build.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Build'
+                  - type: object
+                    required: [editToken]
+                    properties:
+                      editToken: { type: string, example: et_4f9c2a7d1b8e4c6f9a0d }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /builds/{shareCode}:
+    parameters:
+      - { name: shareCode, in: path, required: true, schema: { type: string, pattern: '^[A-Z0-9]{6,8}$' }, example: 7KQ2XM }
+    get:
+      tags: [Builds]
+      summary: Open a shared build (re-priced at current prices)
+      operationId: getBuild
+      responses:
+        '200':
+          description: Build
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Build' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [Builds]
+      summary: Replace a build
+      operationId: updateBuild
+      parameters: [{ $ref: '#/components/parameters/EditToken' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/Configuration' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Build' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Builds]
+      summary: Delete a build
+      operationId: deleteBuild
+      parameters: [{ $ref: '#/components/parameters/EditToken' }]
+      responses:
+        '204': { description: Deleted }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /enquiries:
+    post:
+      tags: [Enquiries]
+      summary: Send an enquiry (create a lead)
+      operationId: createEnquiry
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EnquiryCreate' }
+      responses:
+        '201':
+          description: Received
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, reference, createdAt]
+                properties:
+                  id: { type: string, format: uuid }
+                  reference: { type: string, example: ENQ-2026-000123 }
+                  createdAt: { type: string, format: date-time }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /uploads:
+    post:
+      tags: [AI]
+      summary: Get a pre-signed URL to upload one photo
+      operationId: createUpload
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [kind, mediaType, sizeBytes]
+              properties:
+                kind: { type: string, enum: [identify_photo, visualize_photo] }
+                mediaType: { type: string, enum: [image/jpeg, image/png, image/webp] }
+                sizeBytes: { type: integer, maximum: 8388608 }
+      responses:
+        '201':
+          description: Upload the file with an HTTP PUT to `uploadUrl` before it expires.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [uploadId, uploadUrl, expiresAt]
+                properties:
+                  uploadId: { type: string, example: upl_01JDX5B3QW }
+                  uploadUrl: { type: string, format: uri }
+                  expiresAt: { type: string, format: date-time }
+        '413': { $ref: '#/components/responses/PayloadTooLarge' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /ai/identify:
+    post:
+      tags: [AI]
+      summary: Identify the car in uploaded photos
+      operationId: identifyCar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [uploadIds]
+              properties:
+                uploadIds:
+                  type: array
+                  minItems: 1
+                  maxItems: 8
+                  items: { type: string }
+      responses:
+        '200':
+          description: What the photos show, matched against the catalogue
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IdentifyResult' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '422': { $ref: '#/components/responses/UnprocessablePhoto' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '502': { $ref: '#/components/responses/Upstream' }
+
+  /ai/visualize:
+    post:
+      tags: [AI]
+      summary: Start an AI edit of a car photo with the chosen paint and parts
+      operationId: startVisualize
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [uploadId, vehicleId, config]
+              properties:
+                uploadId: { type: string }
+                vehicleId: { type: string }
+                config:
+                  type: object
+                  required: [paint]
+                  properties:
+                    paint: { $ref: '#/components/schemas/PaintChoice' }
+                    selections: { $ref: '#/components/schemas/Selections' }
+      responses:
+        '202':
+          description: Job queued; poll `GET /ai/jobs/{jobId}`
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [jobId, status]
+                properties:
+                  jobId: { type: string, format: uuid }
+                  status: { type: string, enum: [queued] }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/Upstream' }
+
+  /ai/jobs/{jobId}:
+    get:
+      tags: [AI]
+      summary: AI job status
+      operationId: getAiJob
+      parameters:
+        - { name: jobId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Job
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AiJob' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Staff login
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, minLength: 12 }
+      responses:
+        '200':
+          description: Token pair
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Rotate tokens
+      operationId: refresh
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200':
+          description: New token pair; the old refresh token is revoked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoke the refresh token
+      operationId: logout
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Logged out }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Current staff user
+      operationId: me
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: User
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminUser' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /admin/vehicles:
+    get:
+      tags: [Admin]
+      summary: List vehicles (all statuses)
+      operationId: adminListVehicles
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/PublishStatus' } }
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Vehicles
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Vehicle' } }
+                  nextCursor: { type: [string, 'null'] }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Admin]
+      summary: Create a vehicle
+      operationId: adminCreateVehicle
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VehicleWrite' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Vehicle' }
+        '400': { $ref: '#/components/responses/ValidationFailed' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/vehicles/{vehicleId}:
+    parameters: [{ $ref: '#/components/parameters/VehicleId' }]
+    patch:
+      tags: [Admin]
+      summary: Update a vehicle
+      operationId: adminUpdateVehicle
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VehicleWrite' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Vehicle' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Admin]
+      summary: Archive a vehicle
+      operationId: adminArchiveVehicle
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Archived }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/products:
+    get:
+      tags: [Admin]
+      summary: List products (all statuses)
+      operationId: adminListProducts
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Products
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Product' } }
+    post:
+      tags: [Admin]
+      summary: Create a product
+      operationId: adminCreateProduct
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductWrite' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /admin/products/{productId}:
+    parameters:
+      - { name: productId, in: path, required: true, schema: { type: string } }
+    patch:
+      tags: [Admin]
+      summary: Update a product (price changes bump the catalogue price version)
+      operationId: adminUpdateProduct
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProductWrite' }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Product' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Admin]
+      summary: Archive a product
+      operationId: adminArchiveProduct
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Archived }
+
+  /admin/enquiries:
+    get:
+      tags: [Admin]
+      summary: Enquiry inbox
+      operationId: adminListEnquiries
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/EnquiryStatus' } }
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: q, in: query, schema: { type: string }, description: Name, email, phone or reference }
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Enquiries, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items: { type: array, items: { $ref: '#/components/schemas/Enquiry' } }
+                  nextCursor: { type: [string, 'null'] }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /admin/enquiries/{enquiryId}:
+    parameters:
+      - { name: enquiryId, in: path, required: true, schema: { type: string, format: uuid } }
+    get:
+      tags: [Admin]
+      summary: Read an enquiry with notes
+      operationId: adminGetEnquiry
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Enquiry
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Enquiry' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Admin]
+      summary: Update status or assignee
+      operationId: adminUpdateEnquiry
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { $ref: '#/components/schemas/EnquiryStatus' }
+                assignedTo: { type: [string, 'null'], format: uuid }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Enquiry' }
+
+  /admin/enquiries/{enquiryId}/notes:
+    post:
+      tags: [Admin]
+      summary: Add an internal note
+      operationId: adminAddEnquiryNote
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: enquiryId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string, maxLength: 4000 }
+      responses:
+        '201': { description: Note added }
+
+  /admin/ai-usage:
+    get:
+      tags: [Admin]
+      summary: AI calls and estimated cost this month
+      operationId: adminAiUsage
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: Usage against the monthly budget
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  month: { type: string, example: 2026-11 }
+                  budgetUsd: { type: number, example: 50 }
+                  spentUsd: { type: number, example: 12.4 }
+                  calls:
+                    type: object
+                    properties:
+                      identify: { type: integer }
+                      visualize: { type: integer }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    VehicleId:
+      name: vehicleId
+      in: path
+      required: true
+      schema: { type: string }
+      example: volvo-s90
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    Cursor:
+      name: cursor
+      in: query
+      schema: { type: string }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      schema: { type: string, maxLength: 64 }
+      description: Repeat requests with the same key within 24 h return the first result.
+    EditToken:
+      name: X-Edit-Token
+      in: header
+      required: true
+      schema: { type: string }
+
+  responses:
+    NotFound:
+      description: Not found
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    ValidationFailed:
+      description: Invalid request
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Unauthorized:
+      description: Missing or expired token
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Forbidden:
+      description: Not allowed (role, or wrong edit token)
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Conflict:
+      description: Conflict, e.g. a part this vehicle cannot take
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    PayloadTooLarge:
+      description: File too large
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    UnprocessablePhoto:
+      description: The AI could not use the photo
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    RateLimited:
+      description: Too many requests, or the AI budget is used up
+      headers:
+        RateLimit-Reset: { schema: { type: integer }, description: Seconds until the limit resets }
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Upstream:
+      description: AI provider failed or is not configured
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  schemas:
+    Error:
+      type: object
+      required: [error, requestId]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              enum: [bad_request, validation_failed, unauthorized, forbidden, invalid_edit_token, not_found, conflict,
+                     incompatible_part, payload_too_large, unprocessable_photo, rate_limited, ai_budget_exhausted,
+                     upstream_error, not_configured, internal]
+            message: { type: string }
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string }
+                  issue: { type: string }
+        requestId: { type: string, example: req_01JDX4T8M2 }
+
+    BodyStyle: { type: string, enum: [sedan, suv, coupe] }
+    PublishStatus: { type: string, enum: [draft, published, archived] }
+    Support: { type: string, enum: [replace, attach, material, none] }
+    Slot:
+      type: string
+      enum: [wheels, spoiler, frontBumper, rearBumper, diffuser, sideSkirts, grille, mirrors, headlights, taillights,
+             roof, exhaust, carbonTrim, interior]
+    EnquiryStatus: { type: string, enum: [new, contacted, quoted, won, lost, spam] }
+
+    Brand:
+      type: object
+      required: [id, name]
+      properties:
+        id: { type: string, example: porsche }
+        name: { type: string, example: Porsche }
+        tagline: { type: string }
+        accentColor: { type: string, example: '#F59E0B' }
+        vehicleCount: { type: integer }
+
+    Generation:
+      type: object
+      properties:
+        code: { type: string, example: '992' }
+        label: { type: string, example: 992 (2019–present) }
+        yearFrom: { type: integer }
+        yearTo: { type: integer }
+
+    VehicleSummary:
+      type: object
+      required: [id, brand, model, body, basePrice]
+      properties:
+        id: { type: string, example: porsche-911 }
+        brand: { $ref: '#/components/schemas/Brand' }
+        model: { type: string, example: '911' }
+        body: { $ref: '#/components/schemas/BodyStyle' }
+        basePrice: { type: integer, example: 18600000 }
+        power: { type: string, example: 379 hp }
+        photoUrl: { type: string, format: uri }
+        fully3d: { type: boolean, description: False when the car is shown on a stand-in 3D body }
+
+    Vehicle:
+      allOf:
+        - $ref: '#/components/schemas/VehicleSummary'
+        - type: object
+          properties:
+            status: { $ref: '#/components/schemas/PublishStatus' }
+            defaultGeneration: { type: string }
+            generations: { type: array, items: { $ref: '#/components/schemas/Generation' } }
+            photo:
+              type: object
+              properties:
+                url: { type: string, format: uri }
+                credit: { type: string }
+            asset: { $ref: '#/components/schemas/VehicleAsset' }
+
+    VehicleWrite:
+      type: object
+      properties:
+        id: { type: string, pattern: '^[a-z0-9-]+$' }
+        brandId: { type: string }
+        model: { type: string }
+        body: { $ref: '#/components/schemas/BodyStyle' }
+        basePrice: { type: integer, minimum: 0 }
+        power: { type: string }
+        assetId: { type: string }
+        status: { $ref: '#/components/schemas/PublishStatus' }
+        generations: { type: array, items: { $ref: '#/components/schemas/Generation' } }
+
+    VehicleAsset:
+      type: object
+      required: [id, modelUrl, standIn]
+      properties:
+        id: { type: string, example: volvo-s90-v3 }
+        modelUrl: { type: string, format: uri }
+        fileSizeBytes: { type: integer, example: 13105604 }
+        gpuTextureMb: { type: number, example: 83 }
+        standIn: { type: boolean }
+        credit: { type: string }
+        config:
+          type: object
+          description: 3D viewer settings, same shape as VehicleAssetConfig in the frontend (wheels, attachments,
+            surfaces, doors, cabin, interior sets, factoryPaint, groundShadow, defaultLighting).
+          additionalProperties: true
+
+    Category:
+      type: object
+      properties:
+        id: { type: string, example: wheels }
+        name: { type: string, example: Wheels }
+        blurb: { type: string }
+        slots: { type: array, items: { $ref: '#/components/schemas/Slot' } }
+
+    Finish:
+      type: object
+      required: [id, name, color]
+      properties:
+        id: { type: string, example: polished }
+        name: { type: string, example: Polished }
+        color: { type: string, example: '#e8eaed' }
+        metalness: { type: number }
+        roughness: { type: number }
+        clearcoat: { type: number }
+        price: { type: integer, description: Extra over the product price, INR, example: 9000 }
+
+    Product:
+      type: object
+      required: [id, slot, category, name, price]
+      properties:
+        id: { type: string, example: wheels-forged-turbine }
+        slot: { $ref: '#/components/schemas/Slot' }
+        category: { type: string, example: wheels }
+        name: { type: string, example: Forged Turbine 7-Spoke 21" }
+        description: { type: string }
+        price: { type: integer, example: 98000 }
+        component: { type: string }
+        impl:
+          type: object
+          description: How the 3D viewer realises the product (wheels, attach, material, interior, preview).
+          additionalProperties: true
+        thumb:
+          type: object
+          properties:
+            kind: { type: string }
+            design: { type: string }
+        finishes: { type: array, items: { $ref: '#/components/schemas/Finish' } }
+        defaultFinish: { type: string }
+        support: { $ref: '#/components/schemas/Support' }
+        status: { $ref: '#/components/schemas/PublishStatus' }
+
+    ProductWrite:
+      type: object
+      properties:
+        id: { type: string, pattern: '^[a-z0-9-]+$' }
+        slot: { $ref: '#/components/schemas/Slot' }
+        category: { type: string }
+        name: { type: string }
+        description: { type: string }
+        price: { type: integer, minimum: 0 }
+        component: { type: string }
+        impl: { type: object, additionalProperties: true }
+        thumb: { type: object, additionalProperties: true }
+        defaultFinish: { type: string }
+        status: { $ref: '#/components/schemas/PublishStatus' }
+
+    Paint:
+      type: object
+      required: [id, name, color, price]
+      properties:
+        id: { type: string, example: racing-red }
+        name: { type: string, example: Racing Red }
+        color: { type: string, example: '#a3070f' }
+        metalness: { type: number }
+        roughness: { type: number }
+        clearcoat: { type: number }
+        clearcoatRoughness: { type: number }
+        price: { type: integer, example: 95000 }
+
+    PaintChoice:
+      type: object
+      required: [id]
+      properties:
+        id: { type: string, example: custom }
+        color: { type: string, description: Hex, only for id=custom, example: '#31506e' }
+        finish: { type: string, enum: [gloss, metallic, satin, matte] }
+
+    Selections:
+      type: object
+      description: Map of slot → chosen product
+      additionalProperties:
+        type: object
+        required: [productId]
+        properties:
+          productId: { type: string }
+          finishId: { type: string }
+      example:
+        wheels: { productId: wheels-forged-turbine, finishId: polished }
+
+    Configuration:
+      type: object
+      required: [vehicleId, paint, selections]
+      properties:
+        vehicleId: { type: string, example: volvo-s90 }
+        generation: { type: string, example: SPA }
+        year: { type: integer, example: 2022 }
+        paint: { $ref: '#/components/schemas/PaintChoice' }
+        selections: { $ref: '#/components/schemas/Selections' }
+
+    LineItem:
+      type: object
+      required: [slot, name, price]
+      properties:
+        slot: { type: string, description: A Slot, or `paint` }
+        productId: { type: string }
+        name: { type: string }
+        finish: { type: string }
+        price: { type: integer }
+
+    Quote:
+      type: object
+      required: [currency, lineItems, total, priceVersion]
+      properties:
+        currency: { type: string, enum: [INR] }
+        lineItems: { type: array, items: { $ref: '#/components/schemas/LineItem' } }
+        total: { type: integer, example: 270000 }
+        warnings:
+          type: array
+          items:
+            type: object
+            properties:
+              slot: { type: string }
+              code: { type: string, enum: [preview_only, discontinued] }
+              message: { type: string }
+        priceVersion: { type: integer }
+
+    Build:
+      type: object
+      required: [id, shareCode, shareUrl, configuration, quote, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        shareCode: { type: string, example: 7KQ2XM }
+        shareUrl: { type: string, format: uri, example: https://modified.example/b/7KQ2XM }
+        configuration: { $ref: '#/components/schemas/Configuration' }
+        quote: { $ref: '#/components/schemas/Quote' }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    EnquiryCreate:
+      type: object
+      required: [name, consentMarketing, source]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 80 }
+        email: { type: string, format: email }
+        phone: { type: string, description: E.164, example: '+919812345678' }
+        city: { type: string, maxLength: 80 }
+        preferredContact: { type: string, enum: [phone, email, whatsapp] }
+        message: { type: string, maxLength: 2000 }
+        buildShareCode: { type: string }
+        build: { $ref: '#/components/schemas/Configuration' }
+        consentMarketing: { type: boolean }
+        source: { type: string, enum: [configurator, identify, visualize] }
+        utm:
+          type: object
+          additionalProperties: { type: string }
+        website: { type: string, maxLength: 0, description: Honeypot; must be empty }
+      anyOf:
+        - required: [email]
+        - required: [phone]
+
+    Enquiry:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        reference: { type: string, example: ENQ-2026-000123 }
+        status: { $ref: '#/components/schemas/EnquiryStatus' }
+        name: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        city: { type: string }
+        preferredContact: { type: string }
+        message: { type: string }
+        buildSnapshot:
+          type: object
+          properties:
+            configuration: { $ref: '#/components/schemas/Configuration' }
+            quote: { $ref: '#/components/schemas/Quote' }
+        source: { type: string }
+        assignedTo: { type: [string, 'null'], format: uuid }
+        notes:
+          type: array
+          items:
+            type: object
+            properties:
+              author: { type: string }
+              body: { type: string }
+              createdAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+
+    IdentifyResult:
+      type: object
+      required: [isCar, detected, match, confidence]
+      properties:
+        isCar: { type: boolean }
+        detected:
+          type: object
+          properties:
+            make: { type: string, example: Porsche }
+            model: { type: string, example: '911' }
+            variant: { type: string, example: Carrera 4S }
+            generation: { type: string, example: '991' }
+            yearEstimate: { type: [integer, 'null'], example: 2015 }
+        match:
+          type: [object, 'null']
+          properties:
+            vehicleId: { type: string }
+            generation: { type: string }
+            year: { type: [integer, 'null'] }
+        unsupportedReason: { type: [string, 'null'] }
+        confidence: { type: string, enum: [high, medium, low] }
+        paint:
+          type: object
+          properties:
+            name: { type: string }
+            hex: { type: string }
+            finish: { type: string, enum: [gloss, metallic, satin, matte] }
+        wheels: { type: string }
+        existingMods: { type: array, items: { type: string } }
+        photoAdvice: { type: [string, 'null'] }
+        photoProblems:
+          type: array
+          items:
+            type: object
+            properties:
+              photo: { type: integer, description: 1-based }
+              problem:
+                type: string
+                enum: [not_a_car, interior_only, too_blurry, too_dark, too_bright, too_far, cropped, obstructed, other_car]
+
+    AiJob:
+      type: object
+      required: [jobId, kind, status]
+      properties:
+        jobId: { type: string, format: uuid }
+        kind: { type: string, enum: [identify, visualize] }
+        status: { type: string, enum: [queued, running, succeeded, failed] }
+        resultUrl: { type: [string, 'null'], format: uri, description: Generated image, kept 24 h }
+        error: { $ref: '#/components/schemas/Error' }
+        createdAt: { type: string, format: date-time }
+        finishedAt: { type: [string, 'null'], format: date-time }
+
+    TokenPair:
+      type: object
+      required: [accessToken, refreshToken, expiresIn]
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        expiresIn: { type: integer, example: 900, description: Seconds }
+
+    AdminUser:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        name: { type: string }
+        role: { type: string, enum: [admin, staff] }

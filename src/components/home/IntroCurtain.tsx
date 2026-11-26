@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { INTRO_DONE } from '@/components/motion/MotionRoot';
 import styles from './IntroCurtain.module.css';
 
-const WORD = 'MODIFED';
+const WORD = 'MODIFIED';
 
 /**
  * First visit of the session: the wordmark rises letter by letter over a 0–100 counter, then

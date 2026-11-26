@@ -3,7 +3,7 @@ import { SiteHeader } from '@/components/layout/SiteHeader';
 import { SiteFooter } from '@/components/layout/SiteFooter';
 import { Visualizer } from '@/components/visualize/Visualizer';
 
-export const metadata = { title: 'See it for real — Modifed' };
+export const metadata = { title: 'See it for real — Modified' };
 
 export default function VisualizePage() {
   return (

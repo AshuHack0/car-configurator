@@ -65,6 +65,20 @@ const CARS = [
     brakeMaterials: ['Material.001'],
     simplify: { ratio: 0.6, error: 0.0004 },
   },
+  {
+    // The same Sketchfab 911 at full detail, exported from the user's carPorsche.blend
+    // (Blender → assets-src/vehicles/porsche-911-v2.raw.glb). Not simplified.
+    id: 'porsche-911-v2',
+    source: 'porsche-911-v2.raw.glb',
+    length: 4.491,
+    forward: '+z',
+    removeNodes: ['Hemi.001', 'Hemi.003'],
+    wheelPairs: [
+      { node: 'Cylinder.001', left: 'wheel_fl', right: 'wheel_fr', brakeLeft: 'brake_fl', brakeRight: 'brake_fr' },
+      { node: 'Cylinder.000', left: 'wheel_rl', right: 'wheel_rr', brakeLeft: 'brake_rl', brakeRight: 'brake_rr' },
+    ],
+    brakeMaterials: ['Material.001'],
+  },
 ];
 
 const mb = (bytes) => `${(bytes / 1024 / 1024).toFixed(1)} MB`;
@@ -176,7 +190,7 @@ async function prepare(car, io) {
   await doc.transform(
     dedup(),
     weld(),
-    simplify({ simplifier: MeshoptSimplifier, ...car.simplify }),
+    ...(car.simplify ? [simplify({ simplifier: MeshoptSimplifier, ...car.simplify })] : []),
     textureCompress({ encoder: sharp, targetFormat: 'webp', resize: [2048, 2048], quality: 88 }),
     prune(),
     draco({ quantizePosition: 16, quantizeNormal: 12, quantizeTexcoord: 14 }),

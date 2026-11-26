@@ -115,7 +115,7 @@ export default function HomePage() {
 
         {/* ---- Manifesto (scroll-scrubbed) ----------------------------- */}
         <section id="manifesto" className={styles.manifesto} data-scrub>
-          <span className="mono" data-reveal>02 — Why Modifed</span>
+          <span className="mono" data-reveal>02 — Why Modified</span>
           <p><ScrubWords text={MANIFESTO} /></p>
         </section>
 

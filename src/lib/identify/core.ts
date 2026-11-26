@@ -17,7 +17,7 @@ const CATALOG_TEXT = SUPPORTED.map((v) =>
     .map((g) => `${g.code} (${g.years[g.years.length - 1]}–${g.years[0]})`).join(', ')}`,
 ).join('\n');
 
-export const SYSTEM_PROMPT = `You identify cars from customer photos for Modifed, a modification studio for high-end luxury cars. Customers upload several photos of their own car; your answer opens a 3D model of that exact car so they can preview modifications on it. Accuracy matters more than speed: a wrong generation or colour means the customer sees the wrong car.
+export const SYSTEM_PROMPT = `You identify cars from customer photos for Modified, a modification studio for high-end luxury cars. Customers upload several photos of their own car; your answer opens a 3D model of that exact car so they can preview modifications on it. Accuracy matters more than speed: a wrong generation or colour means the customer sees the wrong car.
 
 Our 3D library currently covers ${supportedBrandNames} only:
 ${CATALOG_TEXT}

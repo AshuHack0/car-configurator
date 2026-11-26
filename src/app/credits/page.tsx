@@ -5,7 +5,7 @@ import type { CSSProperties } from 'react';
 import { SplitWords } from '@/components/motion/split';
 import styles from './credits.module.css';
 
-export const metadata = { title: 'Photo credits — Modifed' };
+export const metadata = { title: 'Photo credits — Modified' };
 
 export default function CreditsPage() {
   return (

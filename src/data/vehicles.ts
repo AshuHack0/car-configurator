@@ -95,6 +95,13 @@ export const VEHICLES: Vehicle[] = [
     ],
   },
   {
+    id: 'porsche-911-v2', brand: 'porsche', model: '911 v2', generation: '991', body: 'coupe',
+    basePrice: 18_600_000, power: '414 hp', assetId: 'porsche-911-v2',
+    generations: [
+      { code: '991', label: '991 (2011–2019)', years: range(2011, 2019) },
+    ],
+  },
+  {
     id: 'porsche-cayenne', brand: 'porsche', model: 'Cayenne', generation: '9Y0', body: 'suv',
     basePrice: 14_200_000, power: '348 hp', assetId: 'porsche-911-991',
     generations: [

@@ -54,7 +54,7 @@ export function SiteFooter() {
       </div>
 
       {/* The wordmark, set as wide as the page. */}
-      <div className={styles.wordmark} aria-hidden>MODIFED</div>
+      <div className={styles.wordmark} aria-hidden>MODIFIED</div>
 
       <div className={styles.legal}>
         <Logo />

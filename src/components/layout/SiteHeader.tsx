@@ -9,9 +9,9 @@ import styles from './SiteHeader.module.css';
 
 export function Logo() {
   return (
-    <Link href="/" className={styles.logo} aria-label="Modifed home">
+    <Link href="/" className={styles.logo} aria-label="Modified home">
       <i aria-hidden />
-      MODIFED
+      MODIFIED
     </Link>
   );
 }
